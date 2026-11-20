@@ -176,6 +176,76 @@ export async function orderCounts(): Promise<Record<OrderStatus | "all", number>
   return out;
 }
 
+export type Bucket = "day" | "week" | "month";
+export interface DeliveryPoint {
+  /** Start of the bucket, YYYY-MM-DD (Morocco time) */
+  key: string;
+  orders: number;
+  revenue: number;
+}
+
+const addDays = (iso: string, n: number) => {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
+const bucketStart = (iso: string, bucket: Bucket) => {
+  if (bucket === "month") return `${iso.slice(0, 7)}-01`;
+  if (bucket === "week") return addDays(iso, -((new Date(`${iso}T00:00:00Z`).getUTCDay() + 6) % 7)); // Monday
+  return iso;
+};
+const nextBucket = (iso: string, bucket: Bucket) => {
+  if (bucket === "day") return addDays(iso, 1);
+  if (bucket === "week") return addDays(iso, 7);
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCMonth(d.getUTCMonth() + 1);
+  return d.toISOString().slice(0, 10);
+};
+
+/**
+ * Delivered orders and their revenue between two dates (inclusive, Morocco time), grouped by day / week / month.
+ * An order counts on the day it was marked "Livrée". Also returns the totals of the previous period of the same length.
+ */
+export async function deliveryStats(from: string, to: string, bucket: Bucket) {
+  const sql = await db();
+  const days = Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000) + 1;
+  const prevFrom = addDays(from, -days);
+  const delivered = sql`
+    select total, (
+      select max((h->>'at')::timestamptz) from jsonb_array_elements(history) h where h->>'status' = 'delivered'
+    ) at time zone 'Africa/Casablanca' as local_at
+    from orders where status = 'delivered'`;
+
+  const [rows, [prev]] = await Promise.all([
+    sql<{ k: string; n: number; revenue: number }[]>`
+      with d as (${delivered})
+      select to_char(date_trunc(${bucket}, local_at), 'YYYY-MM-DD') as k, count(*)::int as n, coalesce(sum(total), 0)::int as revenue
+      from d where local_at >= ${from}::date and local_at < ${to}::date + 1
+      group by 1`,
+    sql<{ n: number; revenue: number }[]>`
+      with d as (${delivered})
+      select count(*)::int as n, coalesce(sum(total), 0)::int as revenue
+      from d where local_at >= ${prevFrom}::date and local_at < ${from}::date`,
+  ]);
+
+  const byKey = new Map(rows.map((r) => [r.k, r]));
+  const points: DeliveryPoint[] = [];
+  for (let k = bucketStart(from, bucket); k <= to; k = nextBucket(k, bucket)) {
+    const r = byKey.get(k);
+    points.push({ key: k, orders: r?.n ?? 0, revenue: r?.revenue ?? 0 });
+  }
+  return {
+    points,
+    orders: points.reduce((n, p) => n + p.orders, 0),
+    revenue: points.reduce((n, p) => n + p.revenue, 0),
+    previous: { orders: prev.n, revenue: prev.revenue },
+  };
+}
+
+/** Today's date in Morocco, YYYY-MM-DD */
+export const todayInMorocco = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Casablanca" }).format(new Date());
+export { addDays as shiftDate };
+
 /** Dashboard figures (Morocco time). */
 export async function dashboardStats() {
   const sql = await db();

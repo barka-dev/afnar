@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { dashboardStats } from "@/lib/server/orders";
+import { dashboardStats, deliveryStats, shiftDate, todayInMorocco, type Bucket } from "@/lib/server/orders";
+import DeliveryChart from "./DeliveryChart";
 import { readProducts } from "@/lib/server/catalog";
 import { colorLabel } from "@/lib/products";
 import { Card, PageHeader, StatusBadge } from "../_ui/ui";
@@ -11,8 +12,34 @@ export const dynamic = "force-dynamic";
 
 const LOW = 2;
 
-export default async function Dashboard() {
-  const [s, products] = await Promise.all([dashboardStats(), readProducts()]);
+const isDate = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v));
+
+/** Turns ?periode=…&du=…&au=… into a date range and a bar size (day / week / month). */
+function period(sp: Record<string, string | undefined>) {
+  const today = todayInMorocco();
+  const p = sp.periode ?? "30j";
+  let from = shiftDate(today, -29);
+  let to = today;
+  if (p === "7j") from = shiftDate(today, -6);
+  else if (p === "90j") from = shiftDate(today, -89);
+  else if (p === "mois") from = `${today.slice(0, 7)}-01`;
+  else if (p === "12m") {
+    const d = new Date(`${today.slice(0, 7)}-01T00:00:00Z`);
+    d.setUTCMonth(d.getUTCMonth() - 11);
+    from = d.toISOString().slice(0, 10);
+  } else if (p === "perso" && isDate(sp.du) && isDate(sp.au)) {
+    [from, to] = sp.du <= sp.au ? [sp.du, sp.au] : [sp.au, sp.du];
+    if (Date.parse(to) - Date.parse(from) > 5 * 366 * 86_400_000) from = shiftDate(to, -5 * 366); // keep it reasonable
+  }
+  const days = (Date.parse(to) - Date.parse(from)) / 86_400_000 + 1;
+  const bucket: Bucket = days <= 35 ? "day" : days <= 190 ? "week" : "month";
+  const preset = ["7j", "30j", "90j", "mois", "12m"].includes(p) || (p === "perso" && isDate(sp.du)) ? p : "30j";
+  return { from, to, bucket, preset };
+}
+
+export default async function Dashboard({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const range = period(await searchParams);
+  const [s, products, delivery] = await Promise.all([dashboardStats(), readProducts(), deliveryStats(range.from, range.to, range.bucket)]);
   const low = products
     .filter((p) => p.active)
     .flatMap((p) => p.colors.flatMap((c) => p.sizes.filter((size) => (c.stock[size] ?? 0) <= LOW).map((size) => ({ p, c, size, n: c.stock[size] ?? 0 }))))
@@ -29,7 +56,17 @@ export default async function Dashboard() {
     <>
       <PageHeader title="Tableau de bord" subtitle="Vue d'ensemble de la boutique (heure du Maroc)." />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+      <DeliveryChart
+        points={delivery.points}
+        bucket={range.bucket}
+        totals={{ orders: delivery.orders, revenue: delivery.revenue }}
+        previous={delivery.previous}
+        preset={range.preset}
+        from={range.from}
+        to={range.to}
+      />
+
+      <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
         {stats.map((x) => {
           const body = (
             <>
