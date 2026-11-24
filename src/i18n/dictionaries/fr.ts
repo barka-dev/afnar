@@ -12,6 +12,8 @@ const fr = {
     thanksTitle: "Merci pour votre commande",
     reviewsTitle: "Avis clientes",
     reviewsDescription: "Textes, photos et messages vocaux : les avis de nos clientes sur leurs abayas AFNAR.",
+    exchangeTitle: "Politique d'échange",
+    exchangeDescription: "Délai, état de l'article, frais : les conditions d'échange des abayas AFNAR.",
     productDescription: (short: string, price: string) => `${short} ${price} — paiement à la livraison partout au Maroc.`,
   },
 
@@ -147,6 +149,7 @@ const fr = {
     soldOutAria: "épuisé",
     frontView: "Vue de face",
     detailView: "Vue détail",
+    photoN: (n: number) => `Photo ${n}`,
     chooseSize: "Veuillez choisir votre taille.",
     lowStock: (n: number) => `Plus que ${n} pièce${n > 1 ? "s" : ""} dans cette taille`,
     sizeUnavailableInColor: "Indisponible dans cette couleur",
@@ -295,6 +298,64 @@ const fr = {
     ctaButton: "Envoyer mon avis",
     whatsappMessage: (store: string) => `Bonjour ${store}, je souhaite partager mon avis sur ma commande.`,
     months: ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"],
+  },
+
+  exchange: {
+    eyebrow: "Service client",
+    title: "Politique d'échange",
+    intro: (days: number) =>
+      `Une taille qui ne tombe pas juste, une couleur qui ne vous ressemble pas ? Vous avez ${days} jours après la réception pour échanger votre article, dans les conditions ci-dessous.`,
+    updated: "Mise à jour : novembre 2026",
+    facts: (days: number) =>
+      [
+        [`${days} jours`, "après la réception du colis"],
+        ["Gratuit", "pour le premier échange de taille ou de couleur"],
+        ["Échange", "pas de remboursement, sauf article défectueux"],
+      ] as [string, string][],
+    acceptedTitle: "Nous acceptons l'échange si…",
+    accepted: (days: number) =>
+      [
+        ["La demande est faite à temps", `Au plus tard ${days} jours après la réception du colis, sur WhatsApp. La date de livraison fait foi.`],
+        ["L'article n'a pas été porté", "Essayé seulement, à l'intérieur, sur vos vêtements. Ni porté dehors, ni lavé, ni repassé, ni retouché."],
+        ["Il est impeccable et sans odeur", "Aucune tache, trace de maquillage ou de déodorant, poil ou accroc. Aucune odeur de parfum, d'encens, de bakhour ou de tabac."],
+        ["Il est complet, étiquette attachée", "L'étiquette AFNAR est toujours fixée, avec la housse, l'emballage et tout ce qui était livré avec (ceinture, hijab assorti…)."],
+        ["La commande est identifiable", "Vous nous donnez le numéro de commande (AF-…) ou le numéro de téléphone utilisé pour commander."],
+        ["C'est son premier échange", "Chaque article peut être échangé une seule fois."],
+      ] as [string, string][],
+    refusedTitle: "Nous refusons l'échange si…",
+    refused: (days: number) => [
+      `La demande arrive plus de ${days} jours après la réception.`,
+      "L'article a été porté, lavé, repassé, parfumé, taché ou abîmé après la livraison.",
+      "L'étiquette a été retirée, ou la housse ou un accessoire manque.",
+      "L'article a été retouché (ourlet raccourci, manches ajustées…) ou fait sur mesure à votre demande.",
+      "La fiche de l'article indique « ni repris ni échangé » (fin de série, soldes).",
+      "L'article a déjà été échangé une fois.",
+      "L'article n'a pas été acheté chez AFNAR.",
+    ],
+    inspection:
+      "Chaque article qui nous revient est contrôlé à son arrivée. S'il ne remplit pas ces conditions, l'échange est refusé et l'article vous est renvoyé, avec les frais de livraison à votre charge.",
+    defectTitle: "Article défectueux ou erreur de notre part",
+    defectText: (hours: number) =>
+      `Un défaut de confection, une pièce abîmée à la livraison, ou une taille ou une couleur différente de votre commande ? Signalez-le dans les ${hours} heures suivant la réception, avec des photos. Nous reprenons l'article et vous envoyons le bon, sans aucun frais, ou nous vous remboursons si la pièce n'est plus disponible. Ce cas ne compte pas comme votre échange.`,
+    stepsTitle: "Comment demander un échange",
+    steps: [
+      ["Écrivez-nous sur WhatsApp", "Avec votre numéro de commande, une photo de l'article et la taille, la couleur ou la pièce souhaitée."],
+      ["Nous confirmons", "Nous vérifions la disponibilité et convenons avec vous du jour de passage du livreur."],
+      ["Le livreur récupère l'article", "Préparez-le dans son emballage d'origine. Il est contrôlé dès son arrivée chez nous."],
+      ["Vous recevez la nouvelle pièce", "Dans les délais de livraison habituels de votre ville."],
+    ] as [string, string][],
+    feesTitle: "Frais et différence de prix",
+    fees: [
+      ["Premier échange de taille ou de couleur", "Gratuit : nous prenons en charge le retrait et la nouvelle livraison."],
+      ["Pièce plus chère", "Vous payez la différence en espèces au livreur."],
+      ["Pièce moins chère", "La différence n'est pas rendue en espèces : elle est gardée en avoir sur votre prochaine commande."],
+      ["Échange refusé après contrôle", "Le renvoi de l'article est à votre charge, au tarif de livraison de votre ville."],
+    ] as [string, string][],
+    ctaTitle: "Un échange à faire ?",
+    ctaText: "Écrivez-nous sur WhatsApp, une conseillère vous répond du lundi au samedi, de 10h à 20h.",
+    ctaButton: "Demander un échange",
+    whatsappMessage: (store: string) => `Bonjour ${store}, je souhaite échanger un article de ma commande n° `,
+    link: "Politique d'échange",
   },
 
   notFound: {

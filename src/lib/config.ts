@@ -6,7 +6,8 @@ export const STORE = {
   // Overridable with NEXT_PUBLIC_WHATSAPP_NUMBER. (Orders are sent to Telegram: see src/lib/server/telegram.ts.)
   whatsappNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "212664553194",
   email: "contact@afnar.ma",
-  instagram: "https://instagram.com/afnar.ma",
+  instagram: "https://www.instagram.com/afnar.hijab/",
+  facebook: "https://web.facebook.com/afnar.hijab",
 };
 
 export const SHIPPING = {
@@ -25,6 +26,14 @@ export const SHIPPING = {
   delayLocalHours: 24,
   delayNationalHours: [24, 72] as [number, number],
   localCity: "Casablanca",
+};
+
+// Exchange policy (page /echange). Wording is in src/i18n/dictionaries (exchange block).
+export const EXCHANGE = {
+  // Days after delivery to ask for an exchange
+  days: 7,
+  // Hours after delivery to report a defect or a mistake on our side
+  defectHours: 48,
 };
 
 export function shippingFee(city: string, subtotal: number): number {

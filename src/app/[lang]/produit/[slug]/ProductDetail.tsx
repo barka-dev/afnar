@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import ProductImage from "@/components/ProductImage";
 import QuantityControl from "@/components/QuantityControl";
 import SizeGuide from "@/components/SizeGuide";
@@ -23,9 +24,12 @@ import {
   type Size,
 } from "@/lib/products";
 
+/** Magnifier zoom level on the product photo (mouse hover). */
+const ZOOM = 2.5;
+
 export default function ProductDetail({ product }: { product: Product }) {
   const router = useRouter();
-  const { t, locale, price: formatPrice, href } = useI18n();
+  const { t, locale, dir, price: formatPrice, href } = useI18n();
   const tp = t.product;
   const lp = localizeProduct(product, locale);
   const category = useCatalog().getCategory(product.category);
@@ -38,7 +42,7 @@ export default function ProductDetail({ product }: { product: Product }) {
   const [colorName, setColorName] = useState(firstAvailable.name);
   const [size, setSize] = useState<Size | null>(null);
   const [qty, setQty] = useState(1);
-  const [view, setView] = useState<"front" | "detail">("front");
+  const [slide, setSlide] = useState(0);
   const [error, setError] = useState("");
   const [added, setAdded] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
@@ -54,11 +58,29 @@ export default function ProductDetail({ product }: { product: Product }) {
   const color = product.colors.find((c) => c.name === colorName)!;
   const stock = size ? stockFor(color, size) : 0;
 
+  // Gallery: every photo of the selected colour, or the two illustration views (front / detail) when it has none.
+  const photoCount = color.images?.length ?? 0;
+  const slides = Array.from({ length: photoCount || 2 }, (_, i) => i);
+  const current = Math.min(slide, slides.length - 1);
+  const viewOf = (i: number) => (i === 0 ? "front" : "detail");
+  const slideLabel = (i: number) => (photoCount ? tp.photoN(i + 1) : i === 0 ? tp.frontView : tp.detailView);
+  // Magnifier: zoom level toggles with state; the zoom point is written straight to the DOM (no re-render per mouse move).
+  const [zoomed, setZoomed] = useState(false);
+  const zoomRef = useRef<HTMLDivElement>(null);
+  const moveZoom = (e: React.PointerEvent<HTMLElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const x = Math.min(100, Math.max(0, ((e.clientX - r.left) / r.width) * 100));
+    const y = Math.min(100, Math.max(0, ((e.clientY - r.top) / r.height) * 100));
+    if (zoomRef.current) zoomRef.current.style.transformOrigin = `${x}% ${y}%`;
+  };
+  const step = (delta: number) => setSlide((s) => (Math.min(s, slides.length - 1) + delta + slides.length) % slides.length);
+
   const lowStock = useMemo(() => (size && stock > 0 && stock <= 2 ? stock : null), [size, stock]);
 
   const chooseColor = (name: string) => {
     const c = product.colors.find((x) => x.name === name)!;
     setColorName(name);
+    setSlide(0);
     setError("");
     if (size && stockFor(c, size) <= 0) setSize(null);
     setQty(1);
@@ -120,42 +142,62 @@ export default function ProductDetail({ product }: { product: Product }) {
       {/* ——— Gallery ——— */}
       <div className="md:sticky md:top-24 md:self-start">
         <div className="flex flex-col-reverse gap-3 lg:flex-row lg:gap-4">
-          <div className="flex justify-center gap-3 px-4 sm:justify-start sm:px-0 lg:flex-col">
-            {(["front", "detail"] as const).map((v) => (
+          <div className="flex justify-center gap-3 overflow-x-auto px-4 py-1 sm:justify-start sm:px-1 lg:max-h-[78svh] lg:flex-col lg:overflow-x-visible lg:overflow-y-auto lg:py-1">
+            {slides.map((i) => (
               <button
-                key={v}
-                onClick={() => setView(v)}
-                className={`relative aspect-[3/4] w-16 overflow-hidden bg-sand transition-all duration-500 sm:w-20 ${
-                  view === v ? "ring-1 ring-ink ring-offset-2 ring-offset-ivory" : "opacity-60 hover:opacity-100"
+                key={i}
+                onClick={() => setSlide(i)}
+                className={`relative aspect-[3/4] w-16 shrink-0 overflow-hidden bg-sand transition-all duration-500 sm:w-20 ${
+                  current === i ? "ring-1 ring-ink ring-offset-2 ring-offset-ivory" : "opacity-60 hover:opacity-100"
                 }`}
-                aria-label={v === "front" ? tp.frontView : tp.detailView}
+                aria-label={slideLabel(i)}
+                aria-current={current === i}
               >
                 <div className={`absolute inset-0 ${available ? "" : "grayscale"}`}>
-                  <ProductImage product={product} color={color} view={v} sizes="80px" />
+                  <ProductImage product={product} color={color} view={viewOf(i)} index={i} sizes="80px" />
                 </div>
               </button>
             ))}
           </div>
           <div
-            className="group relative aspect-[3/4] max-h-[78svh] flex-1 touch-pan-y overflow-hidden bg-sand md:max-h-none"
+            className={`group relative aspect-[3/4] max-h-[78svh] flex-1 touch-pan-y overflow-hidden bg-sand md:max-h-none ${
+              photoCount ? "cursor-zoom-in" : ""
+            }`}
+            // Magnifier (mouse only): the photo zooms in around the cursor and follows it.
+            onPointerEnter={(e) => {
+              if (e.pointerType !== "mouse" || !photoCount) return;
+              moveZoom(e);
+              setZoomed(true);
+            }}
+            onPointerMove={(e) => e.pointerType === "mouse" && moveZoom(e)}
+            onPointerLeave={() => setZoomed(false)}
             onTouchStart={(e) => (touchX.current = e.touches[0].clientX)}
             onTouchEnd={(e) => {
               if (touchX.current === null) return;
               const dx = e.changedTouches[0].clientX - touchX.current;
               touchX.current = null;
-              if (Math.abs(dx) > 40) setView((v) => (v === "front" ? "detail" : "front"));
+              // swipe left = next photo (mirrored in Arabic, where the gallery reads right to left)
+              if (Math.abs(dx) > 40) step((dx < 0 ? 1 : -1) * (dir === "rtl" ? -1 : 1));
             }}
           >
-            <div key={`${color.name}-${view}`} className={`absolute inset-0 animate-fade-in ${available ? "" : "grayscale opacity-50"}`}>
-              <div className="absolute inset-0 transition-transform duration-[1600ms] ease-[var(--ease-luxe)] group-hover:scale-105">
-                <ProductImage product={product} color={color} view={view} priority sizes="(min-width: 1024px) 50vw, 100vw" />
+            <div key={`${color.name}-${current}`} className={`absolute inset-0 animate-fade-in ${available ? "" : "grayscale opacity-50"}`}>
+              <div
+                ref={zoomRef}
+                className={`absolute inset-0 transition-transform ease-[var(--ease-luxe)] ${
+                  photoCount ? "duration-300" : "duration-[1600ms] group-hover:scale-105"
+                }`}
+                style={zoomed ? { transform: `scale(${ZOOM})` } : undefined}
+              >
+                <ProductImage product={product} color={color} view={viewOf(current)} index={current} priority sizes="(min-width: 1024px) 50vw, 100vw" />
+                {/* sharper copy while zooming, so the details stay crisp (photos are stored up to 2000px) */}
+                {zoomed && <ProductImage product={product} color={color} index={current} sizes="2000px" />}
               </div>
             </div>
             {!available && <div className="crossed absolute inset-0 [--cross-width:1.25px]" aria-hidden />}
             {/* swipe indicator (touch screens) */}
             <div className="absolute inset-x-0 bottom-4 flex justify-center gap-2 lg:hidden" aria-hidden>
-              {(["front", "detail"] as const).map((v) => (
-                <span key={v} className={`h-1.5 rounded-full transition-all duration-500 ${view === v ? "w-6 bg-ink/70" : "w-1.5 bg-ink/25"}`} />
+              {slides.map((i) => (
+                <span key={i} className={`h-1.5 rounded-full transition-all duration-500 ${current === i ? "w-6 bg-ink/70" : "w-1.5 bg-ink/25"}`} />
               ))}
             </div>
             {!available && (
@@ -311,8 +353,10 @@ export default function ProductDetail({ product }: { product: Product }) {
           <li className="flex flex-col items-center gap-2">
             <TruckIcon className="h-5 w-5 text-gold-dark" /> {tp.delivery(ship.national)}
           </li>
-          <li className="flex flex-col items-center gap-2">
-            <ExchangeIcon className="h-5 w-5 text-gold-dark" /> {tp.exchange}
+          <li>
+            <Link href={href("/echange")} className="flex flex-col items-center gap-2 underline-offset-4 hover:text-ink hover:underline">
+              <ExchangeIcon className="h-5 w-5 text-gold-dark" /> {tp.exchange}
+            </Link>
           </li>
         </ul>
 

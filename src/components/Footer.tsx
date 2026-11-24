@@ -59,6 +59,11 @@ export default function Footer({ locale, categories }: { locale: Locale; categor
                   {f.reviews}
                 </Link>
               </li>
+              <li>
+                <Link href={localePath(locale, "/echange")} className="link-underline inline-block py-1 hover:text-ivory">
+                  {t.exchange.link}
+                </Link>
+              </li>
               <li className="text-ivory/60">{f.hours}</li>
             </ul>
           </div>
@@ -66,8 +71,15 @@ export default function Footer({ locale, categories }: { locale: Locale; categor
             <p className="eyebrow !text-gold">{f.follow}</p>
             <ul className="mt-4 space-y-2">
               <li>
-                <a href={STORE.instagram} target="_blank" rel="noopener noreferrer" className="link-underline inline-block py-1 hover:text-ivory">
-                  Instagram
+                <a href={STORE.instagram} target="_blank" rel="noopener noreferrer" className="group inline-flex items-center gap-2.5 py-1 hover:text-ivory">
+                  <InstagramIcon />
+                  <span className="link-underline">Instagram</span>
+                </a>
+              </li>
+              <li>
+                <a href={STORE.facebook} target="_blank" rel="noopener noreferrer" className="group inline-flex items-center gap-2.5 py-1 hover:text-ivory">
+                  <FacebookIcon />
+                  <span className="link-underline">Facebook</span>
                 </a>
               </li>
               <li className="text-ivory/60">{f.freeExchange}</li>
@@ -81,5 +93,23 @@ export default function Footer({ locale, categories }: { locale: Locale; categor
         </div>
       </div>
     </footer>
+  );
+}
+
+function InstagramIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="0.9" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function FacebookIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true" className="shrink-0">
+      <path d="M13.5 21v-7.5h2.6l.4-3h-3V8.6c0-.9.3-1.5 1.5-1.5h1.6V4.4c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4v2.2H7.8v3h2.6V21h3.1Z" />
+    </svg>
   );
 }
