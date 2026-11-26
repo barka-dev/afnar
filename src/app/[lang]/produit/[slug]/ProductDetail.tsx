@@ -160,12 +160,11 @@ export default function ProductDetail({ product }: { product: Product }) {
             ))}
           </div>
           <div
-            className={`group relative aspect-[3/4] max-h-[78svh] flex-1 touch-pan-y overflow-hidden bg-sand md:max-h-none ${
-              photoCount ? "cursor-zoom-in" : ""
-            }`}
-            // Magnifier (mouse only): the photo zooms in around the cursor and follows it.
+            className="group relative aspect-[3/4] max-h-[78svh] flex-1 cursor-zoom-in touch-pan-y overflow-hidden bg-sand md:max-h-none"
+            // Magnifier (mouse only), on photos and on the illustration alike: the image zooms in around the
+            // cursor and follows it.
             onPointerEnter={(e) => {
-              if (e.pointerType !== "mouse" || !photoCount) return;
+              if (e.pointerType !== "mouse") return;
               moveZoom(e);
               setZoomed(true);
             }}
@@ -183,14 +182,12 @@ export default function ProductDetail({ product }: { product: Product }) {
             <div key={`${color.name}-${current}`} className={`absolute inset-0 animate-fade-in ${available ? "" : "grayscale opacity-50"}`}>
               <div
                 ref={zoomRef}
-                className={`absolute inset-0 transition-transform ease-[var(--ease-luxe)] ${
-                  photoCount ? "duration-300" : "duration-[1600ms] group-hover:scale-105"
-                }`}
+                className="absolute inset-0 transition-transform duration-300 ease-[var(--ease-luxe)]"
                 style={zoomed ? { transform: `scale(${ZOOM})` } : undefined}
               >
                 <ProductImage product={product} color={color} view={viewOf(current)} index={current} priority sizes="(min-width: 1024px) 50vw, 100vw" />
-                {/* sharper copy while zooming, so the details stay crisp (photos are stored up to 2000px) */}
-                {zoomed && <ProductImage product={product} color={color} index={current} sizes="2000px" />}
+                {/* sharper copy of a photo while zooming (photos are stored up to 2000px); the illustration is vector, already sharp */}
+                {zoomed && photoCount > 0 && <ProductImage product={product} color={color} index={current} sizes="2000px" />}
               </div>
             </div>
             {!available && <div className="crossed absolute inset-0 [--cross-width:1.25px]" aria-hidden />}
