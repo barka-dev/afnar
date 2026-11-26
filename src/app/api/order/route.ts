@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { hasLocale } from "@/i18n/config";
+import { DEFAULT_LOCALE, hasLocale } from "@/i18n/config";
 import { MOROCCAN_CITIES } from "@/lib/cities";
 import { shippingFee } from "@/lib/config";
 import { generateOrderRef, normalizeMoroccanPhone } from "@/lib/format";
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
   if (address.length < 8) bad.push("address");
   if (bad.length) return reply({ ok: false, error: "invalid", fields: bad }, 400);
 
-  const locale = hasLocale(input.locale) ? input.locale : "fr";
+  const locale = hasLocale(input.locale) ? input.locale : DEFAULT_LOCALE;
 
   // ——— Items: resolved against the catalogue, never trusting client prices ———
   if (!Array.isArray(input.items) || input.items.length === 0 || input.items.length > MAX_ITEMS) {

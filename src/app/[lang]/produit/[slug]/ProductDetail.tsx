@@ -216,13 +216,6 @@ export default function ProductDetail({ product }: { product: Product }) {
           <h1 className={`font-serif text-[2.1rem] font-light leading-tight sm:text-4xl lg:text-5xl ${available ? "" : "text-muted line-through decoration-sold decoration-1"}`}>
             {lp.name}
           </h1>
-          <span
-            className="whitespace-nowrap font-serif text-lg text-muted md:text-xl"
-            lang={locale === "ar" ? "fr" : "ar"}
-            dir={locale === "ar" ? "ltr" : "rtl"}
-          >
-            {lp.altName}
-          </span>
         </div>
         <div className="mt-4 flex items-baseline gap-3">
           <p className="text-2xl">{formatPrice(product.price)}</p>

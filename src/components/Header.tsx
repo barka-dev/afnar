@@ -7,7 +7,6 @@ import { useCart } from "@/context/CartContext";
 import { BagIcon, CloseIcon, MenuIcon } from "./Icons";
 import { STORE } from "@/lib/config";
 import { useI18n } from "@/i18n/I18nProvider";
-import LanguageSwitcher from "./LanguageSwitcher";
 import { useScrollLock } from "@/lib/useScrollLock";
 
 export default function Header() {
@@ -16,7 +15,6 @@ export default function Header() {
   const NAV = [
     { href: href("/"), label: t.nav.home },
     { href: href("/boutique"), label: t.nav.shop },
-    { href: href("/boutique?categorie=brodee"), label: t.nav.embroidered, wideOnly: true },
     { href: href("/avis"), label: t.nav.reviews },
     { href: href("/#maison"), label: t.nav.maison },
     { href: href("/#commander"), label: t.nav.howToOrder },
@@ -73,11 +71,11 @@ export default function Header() {
             <MenuIcon />
           </button>
           <nav className="hidden gap-8 lg:flex">
-            {NAV.slice(0, 4).map((n) => (
+            {NAV.slice(0, 3).map((n) => (
               <Link
                 key={n.href}
                 href={n.href}
-                className={`link-underline text-[0.68rem] uppercase tracking-[0.24em] ${n.wideOnly ? "hidden xl:inline" : ""}`}
+                className="link-underline text-[0.68rem] uppercase tracking-[0.24em]"
                 aria-current={pathname === n.href ? "page" : undefined}
               >
                 {n.label}
@@ -101,13 +99,12 @@ export default function Header() {
 
         <div className="flex items-center justify-end gap-4 lg:gap-8">
           <nav className="hidden gap-8 lg:flex">
-            {NAV.slice(4).map((n) => (
+            {NAV.slice(3).map((n) => (
               <Link key={n.href} href={n.href} className="link-underline text-[0.68rem] uppercase tracking-[0.24em]">
                 {n.label}
               </Link>
             ))}
           </nav>
-          <LanguageSwitcher className="hidden sm:flex" />
           <button onClick={openCart} className="relative -me-2.5 flex h-11 w-11 items-center justify-center" aria-label={t.nav.cartAria(count)}>
             <BagIcon className="h-[22px] w-[22px]" />
             {hydrated && count > 0 && (
@@ -158,7 +155,6 @@ export default function Header() {
           ))}
         </nav>
         <div className="shrink-0 space-y-5 border-t border-stone/60 px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-5 sm:px-8">
-          <LanguageSwitcher large />
           <p className="text-xs uppercase tracking-[0.22em] text-muted">{t.nav.mobileFooter}</p>
         </div>
       </div>

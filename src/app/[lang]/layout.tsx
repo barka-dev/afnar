@@ -40,7 +40,6 @@ export async function generateMetadata({ params }: LayoutProps<"/[lang]">): Prom
       title: t.meta.ogTitle,
       description: t.meta.ogDescription,
       locale: LOCALE_META[lang].og,
-      alternateLocale: LOCALES.filter((l) => l !== lang).map((l) => LOCALE_META[l].og),
       type: "website",
     },
   };

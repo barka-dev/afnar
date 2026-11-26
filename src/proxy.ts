@@ -1,12 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { LOCALE_COOKIE, hasLocale, matchAcceptLanguage } from "@/i18n/config";
+import { DEFAULT_LOCALE, hasLocale } from "@/i18n/config";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/server/session";
 
 /**
  * - /admin: only for the logged-in owner (everything else is sent to /admin/login).
- * - Shop: every page lives under /fr or /ar. Requests without a locale prefix
- *   (e.g. old links to /boutique) are redirected to the visitor's language:
- *   saved choice (cookie) → browser language → French.
+ * - Shop: Arabic only, at clean addresses (/boutique, /produit/x). They are rewritten internally to the
+ *   pages in src/app/[lang] (locale "ar"). Old /ar/... and /fr/... links redirect to the clean address.
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -31,14 +30,18 @@ export async function proxy(request: NextRequest) {
     return res;
   }
 
-  if (hasLocale(first)) return;
-
-  const saved = request.cookies.get(LOCALE_COOKIE)?.value;
-  const locale = hasLocale(saved) ? saved : matchAcceptLanguage(request.headers.get("accept-language"));
-
   const url = request.nextUrl.clone();
-  url.pathname = `/${locale}${pathname === "/" ? "" : pathname}`;
-  return NextResponse.redirect(url);
+
+  // Old prefixed links: /ar/... (Arabic) and /fr/... (French version, removed) → same page at the clean address.
+  // Permanent (308) so search engines move their results to the clean addresses. Query string is kept.
+  if (first === "fr" || hasLocale(first)) {
+    url.pathname = pathname.slice(first.length + 1) || "/";
+    return NextResponse.redirect(url, 308);
+  }
+
+  // Clean address (/boutique, /produit/x, /) → served by the Arabic pages in src/app/[lang]. The address bar does not change.
+  url.pathname = `/${DEFAULT_LOCALE}${pathname === "/" ? "" : pathname}`;
+  return NextResponse.rewrite(url);
 }
 
 export const config = {

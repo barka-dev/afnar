@@ -27,7 +27,7 @@ export default function AdminNav({ newOrders }: { newOrders: number }) {
           <span className="block text-[0.6rem] uppercase tracking-[0.3em] text-gold-dark">Admin</span>
         </Link>
         <div className="flex items-center gap-1 lg:hidden">
-          <a href="/fr" target="_blank" className="rounded-md px-3 py-2 text-xs text-muted hover:bg-sand hover:text-ink">
+          <a href="/" target="_blank" className="rounded-md px-3 py-2 text-xs text-muted hover:bg-sand hover:text-ink">
             Boutique ↗
           </a>
           <form action={logout}>
@@ -56,7 +56,7 @@ export default function AdminNav({ newOrders }: { newOrders: number }) {
       </nav>
 
       <div className="hidden space-y-1 border-t border-stone/70 p-3 lg:block">
-        <a href="/fr" target="_blank" className="flex min-h-10 items-center rounded-md px-3 text-sm text-muted hover:bg-sand hover:text-ink">
+        <a href="/" target="_blank" className="flex min-h-10 items-center rounded-md px-3 text-sm text-muted hover:bg-sand hover:text-ink">
           Voir la boutique ↗
         </a>
         <form action={logout}>

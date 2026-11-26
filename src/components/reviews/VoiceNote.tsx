@@ -2,8 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
-import { LOCALE_META, type Locale } from "@/i18n/config";
-import type { ReviewVoice } from "@/lib/reviews";
+import { REVIEW_LANG_META, type Review, type ReviewVoice } from "@/lib/reviews";
 
 const BARS = 34;
 const RATES = [1, 1.5, 2];
@@ -29,7 +28,7 @@ const clock = (s: number) => {
 };
 
 /** WhatsApp-style voice note player: play/pause, seekable waveform, speed, transcript. */
-export default function VoiceNote({ voice, id, lang }: { voice: ReviewVoice; id: string; lang: Locale }) {
+export default function VoiceNote({ voice, id, lang }: { voice: ReviewVoice; id: string; lang: Review["lang"] }) {
   const { t } = useI18n();
   const tr = t.reviews;
   const audio = useRef<HTMLAudioElement>(null);
@@ -219,8 +218,8 @@ export default function VoiceNote({ voice, id, lang }: { voice: ReviewVoice; id:
           <p
             id={transcriptId}
             hidden={!showTranscript}
-            lang={LOCALE_META[lang].htmlLang}
-            dir={LOCALE_META[lang].dir}
+            lang={REVIEW_LANG_META[lang].htmlLang}
+            dir={REVIEW_LANG_META[lang].dir}
             className={`mt-1.5 border-s border-gold/60 ps-3 text-sm leading-relaxed text-ink/80 ${lang === "ar" ? "" : "italic"}`}
           >
             « {voice.transcript} »

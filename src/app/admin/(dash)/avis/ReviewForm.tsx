@@ -15,7 +15,7 @@ function toInput(r?: Review): ReviewInput {
     city: r?.city ?? "",
     date: r?.date ?? new Date().toISOString().slice(0, 10),
     rating: r?.rating ?? 5,
-    lang: r?.lang ?? "fr",
+    lang: r?.lang ?? "ar",
     text: r?.text ?? "",
     photos: (r?.photos ?? []).flatMap((p) => ("src" in p ? [p.src] : [])),
     voice: r?.voice ? { src: r.voice.src, duration: r.voice.duration, transcript: r.voice.transcript ?? "" } : null,

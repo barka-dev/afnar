@@ -1,6 +1,8 @@
 # CLAUDE.md
 
-AFNAR: a bilingual (French / Arabic RTL) abaya store for Morocco, with an admin dashboard. Cash on delivery only; orders are saved in Postgres and pushed to the owner's Telegram. `README.md` is the owner-facing guide (setup, Telegram bot, Vercel); this file is for working on the code.
+AFNAR: an Arabic-only (RTL) abaya store for Morocco, with a French admin dashboard. Cash on delivery only; orders are saved in Postgres and pushed to the owner's Telegram. `README.md` is the owner-facing guide (setup, Telegram bot, Vercel); this file is for working on the code.
+
+**Brand:** this repo sits in the AFNAR workspace; the shared brand rules are in `../branding/` (core in `../branding/BRAND.md`, loaded via `../CLAUDE.md`). All shop copy follows `../branding/voice-and-tone.md` and all UI follows `../branding/visual-identity.md`. If you change design tokens in `globals.css` or values in `src/lib/config.ts` (fees, delays, exchange, contacts), update the matching section in `../branding/` in the same change.
 
 ## Stack
 
@@ -39,10 +41,10 @@ Run `npm run lint` after changes. Both `package-lock.json` and `pnpm-lock.yaml` 
 
 ```
 src/
-  proxy.ts                 Next 16 "proxy" (formerly middleware): admin auth gate + locale redirect
+  proxy.ts                 Next 16 "proxy" (formerly middleware): admin auth gate + clean-address rewrite
   app/
-    [lang]/                The shop, every page under /fr or /ar
-      layout.tsx           Root <html> per locale; loads catalogue from DB into CatalogProvider
+    [lang]/                The shop. Public addresses are clean (/boutique); the proxy rewrites them to /ar/...
+      layout.tsx           Root <html lang="ar-MA" dir="rtl">; loads catalogue from DB into CatalogProvider
       page.tsx             Home
       boutique/            Shop (?categorie=<slug>, sorting, in-stock filter)
       produit/[slug]/      Product page
@@ -60,7 +62,7 @@ src/
     api/admin/upload/      Upload token (Blob) or local-file upload (dev)
   components/              Shop UI (Header, Footer, CartDrawer, ProductCard, reviews/…)
   context/                 CartContext (localStorage "afnar-cart-v1"), CatalogContext
-  i18n/                    config.ts (locales), index.ts (helpers), I18nProvider (useI18n), dictionaries/
+  i18n/                    config.ts (locale), index.ts (helpers), I18nProvider (useI18n), dictionaries/ (ar.ts + types.ts)
   lib/                     Shared types & pure helpers (client-safe)
     config.ts              STORE, SHIPPING (fees, free threshold, delays), EXCHANGE
     products.ts            Catalogue types, SIZES, CUTS, stock helpers, size guide
@@ -98,12 +100,14 @@ The browser sends only slugs, colours, sizes, quantities and customer details. T
 - The proxy alone is not enough: every server action goes through `guarded()`, which calls `assertAdmin()`, and API routes check `isAdmin()`. Keep that pattern for new mutations.
 - Admin UI text is French only (`STATUS_LABEL` etc.); it does not use the i18n dictionaries.
 
-### i18n
-- Locales: `fr` (default, LTR) and `ar` (RTL), in `src/i18n/config.ts`. The proxy redirects paths without a locale using the cookie `afnar-locale`, then `Accept-Language`, then French.
-- `dictionaries/fr.ts` is the source of truth and exports the `Dictionary` type; `ar.ts` must match it (tsc enforces this). Some entries are functions for interpolation, e.g. `t.shipping.hours(n)`. **Add every new UI string to both files.**
+### Language (Arabic only)
+- The shop has one locale, `ar` (RTL), in `src/i18n/config.ts`. French was removed in November 2026.
+- **Clean addresses:** visitors see `/boutique`, `/produit/x`, `/`. `src/proxy.ts` rewrites them to `/ar/...` (the `[lang]` folder) without changing the address bar, and 308-redirects old `/ar/...` and `/fr/...` links to the clean address. `localePath()` / `href()` return the clean path, so **never hard-code `/ar/` in links**. The i18n plumbing (`[lang]`, `useI18n`, `localePath`) is kept so pages stay unchanged.
+- UI text lives in `dictionaries/ar.ts`, typed by `dictionaries/types.ts` (`Dictionary`). **For a new string, add the key to `types.ts`, then its text to `ar.ts`.** Some entries are functions for interpolation, e.g. `t.shipping.hours(n)`. Tone: feminine Arabic, Islamic expressions where natural (see `../branding/voice-and-tone.md`).
 - Server components: `getDictionary(lang)`. Client components: `const { t, locale, dir, price, href } = useI18n()`.
-- Internal links must keep the locale: `href("/boutique")` on the client, `localePath(locale, path)` on the server. Pages set `alternates(lang, "/path")` in `generateMetadata` for canonical URLs and hreflang.
-- Product and category copy: French fields plus `nameAr`, `descriptionAr` and the `ar` jsonb object. Telegram/WhatsApp order text for the team stays in French; the customer's confirmation is in their language.
+- Internal links: `href("/boutique")` on the client, `localePath(locale, path)` on the server. Pages set `alternates(lang, "/path")` in `generateMetadata` for canonical URLs.
+- Product and category copy shown in the shop: `nameAr`, `descriptionAr` and the `ar` jsonb object. The French fields (`name`, `description`…) remain in the DB as internal reference and fallback when an Arabic field is empty (`localizeProduct` & co. in `lib/products.ts`). A colour's French `name` and a city's French name are still the ids stored in carts and orders.
+- The team side stays French: admin UI, Telegram order notice, `formatDH` in `lib/format.ts`. The customer's WhatsApp confirmation is Arabic. A review's `lang` is the language the customer wrote in (can still be `fr`), not the shop language.
 - Prices and dates go through `formatPrice` / `formatDate` (deterministic, so no hydration mismatch). Don't use `toLocaleString`.
 - RTL: prefer logical Tailwind utilities (`ms-`, `me-`, `ps-`, `pe-`, `start-`, `end-`, `text-start`) over `ml-` / `left-`.
 
@@ -124,7 +128,7 @@ The browser sends only slugs, colours, sizes, quantities and customer details. T
 | Delivery fees, free-delivery threshold, delays | `src/lib/config.ts` → `SHIPPING` |
 | Exchange policy numbers | `src/lib/config.ts` → `EXCHANGE` (wording in the dictionaries' `exchange` block) |
 | Cities and their Arabic names | `src/lib/cities.ts` |
-| Shop UI text | `src/i18n/dictionaries/fr.ts` and `ar.ts` |
+| Shop UI text | `src/i18n/dictionaries/ar.ts` (keys typed in `types.ts`) |
 | Telegram / WhatsApp message formats | `src/lib/server/telegram.ts` |
 | Order statuses and their labels | `src/lib/order-status.ts` |
 | Available sizes, size guide | `src/lib/products.ts` |

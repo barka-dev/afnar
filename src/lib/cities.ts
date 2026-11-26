@@ -58,7 +58,7 @@ export const CITIES: { fr: string; ar: string }[] = [
 
 export const MOROCCAN_CITIES = CITIES.map((c) => c.fr);
 
-export function cityLabel(city: string, locale: Locale): string {
-  if (locale === "fr") return city;
+/** Arabic name of a city. Cities are stored by their French name (their id in orders), never shown as such. */
+export function cityLabel(city: string, _locale: Locale): string {
   return CITIES.find((c) => c.fr === city)?.ar ?? city;
 }

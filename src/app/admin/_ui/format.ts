@@ -1,6 +1,6 @@
-import { formatPrice } from "@/i18n";
+import { formatDH } from "@/lib/format";
 
-export const dh = (v: number) => formatPrice(v, "fr");
+export const dh = formatDH;
 
 const DT = new Intl.DateTimeFormat("fr-FR", { timeZone: "Africa/Casablanca", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 const D = new Intl.DateTimeFormat("fr-FR", { timeZone: "Africa/Casablanca", day: "numeric", month: "long", year: "numeric" });

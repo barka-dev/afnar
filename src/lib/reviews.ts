@@ -1,4 +1,8 @@
-import type { Locale } from "@/i18n/config";
+/** Language a review was written in → HTML lang and text direction for its text and transcript. */
+export const REVIEW_LANG_META = {
+  ar: { htmlLang: "ar-MA", dir: "rtl" },
+  fr: { htmlLang: "fr-MA", dir: "ltr" },
+} as const;
 import type { Cut } from "@/lib/products";
 
 /**
@@ -30,8 +34,11 @@ export interface Review {
   /** YYYY-MM-DD */
   date: string;
   rating: 1 | 2 | 3 | 4 | 5;
-  /** Language the review is written / spoken in */
-  lang: Locale;
+  /**
+   * Language the customer wrote / spoke the review in (sets text direction). Independent of the shop's
+   * language: the shop is Arabic only, but a customer may still send her review in French.
+   */
+  lang: "ar" | "fr";
   text?: string;
   photos?: ReviewPhoto[];
   voice?: ReviewVoice;

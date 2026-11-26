@@ -8,11 +8,12 @@
  *
  * The message (French, for the store team) shows the customer's phone as a wa.me link, with a
  * "Confirmer sur WhatsApp" button underneath. Both open a WhatsApp chat with the customer, pre-filled
- * with a confirmation message in the customer's language.
+ * with a confirmation message in Arabic (the shop's only language).
  */
 
 import { STORE } from "@/lib/config";
-import { formatPrice, LOCALE_META } from "@/i18n";
+import { formatPrice } from "@/i18n";
+import { formatDH } from "@/lib/format";
 import { cityLabel } from "@/lib/cities";
 import { colorLabel, productName, type Product } from "@/lib/products";
 import type { OrderPayload } from "@/lib/order";
@@ -24,7 +25,7 @@ const TIMEOUT_MS = 15_000;
 // ——— Message ———
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-const dh = (v: number) => formatPrice(v, "fr");
+const dh = formatDH;
 
 /** 0612345678 -> "06 12 34 56 78" */
 export const prettyPhone = (p: string) => p.replace(/(\d{2})(?=\d)/g, "$1 ");
@@ -32,7 +33,7 @@ export const prettyPhone = (p: string) => p.replace(/(\d{2})(?=\d)/g, "$1 ");
 /** 0612345678 -> "212612345678" (wa.me format) */
 const intlPhone = (p: string) => `212${p.replace(/^0/, "")}`;
 
-/** The confirmation the store sends the customer, in the customer's language (pre-filled in WhatsApp). */
+/** The confirmation the store sends the customer, in Arabic (pre-filled in WhatsApp). */
 export function customerConfirmationText(o: OrderPayload, products: Product[]): string {
   const l = o.locale;
   const getProduct = (slug: string) => products.find((p) => p.slug === slug);
@@ -42,29 +43,18 @@ export function customerConfirmationText(o: OrderPayload, products: Product[]): 
     const c = p?.colors.find((x) => x.name === line.color);
     const name = p ? productName(p, l) : line.name;
     const color = c ? colorLabel(c, l) : line.color;
-    return l === "ar" ? `- ${name} (${color}، مقاس ${line.size}) × ${line.qty}` : `- ${name} (${color}, T${line.size}) × ${line.qty}`;
+    return `- ${name} (${color}، مقاس ${line.size}) × ${line.qty}`;
   });
   const city = cityLabel(o.customer.city, l);
 
-  if (l === "ar") {
-    return [
-      `السلام عليكم ${first}، معك ${STORE.name}.`,
-      `شكراً على طلبك ${o.ref}:`,
-      ...items,
-      `المبلغ عند الاستلام: ${formatPrice(o.total, "ar")}`,
-      `التوصيل: ${city}، ${o.customer.address}`,
-      ``,
-      `واش تأكدي لينا الطلب باش نصيفطوه ليك؟ شكراً!`,
-    ].join("\n");
-  }
   return [
-    `Bonjour ${first}, ici ${STORE.name}.`,
-    `Merci pour votre commande ${o.ref} :`,
+    `السلام عليكم ${first}، معكِ ${STORE.name}.`,
+    `جزاكِ الله خيرًا على طلبكِ ${o.ref}:`,
     ...items,
-    `Total à payer à la livraison : ${formatPrice(o.total, "fr")}`,
-    `Livraison : ${city}, ${o.customer.address}`,
+    `المبلغ عند الاستلام: ${formatPrice(o.total, l)}`,
+    `التوصيل: ${city}، ${o.customer.address}`,
     ``,
-    `Pouvez-vous nous confirmer la commande pour que nous l'expédiions ? Merci !`,
+    `واش تأكدي لينا الطلب باش نصيفطوه ليكِ إن شاء الله؟ بارك الله فيكِ.`,
   ].join("\n");
 }
 
@@ -109,7 +99,6 @@ export function buildOrderMessage(o: OrderPayload, products: Product[], orderId?
     `Livraison : ${o.shipping === 0 ? "Offerte" : dh(o.shipping)}`,
     `💰 <b>À encaisser à la livraison : ${dh(o.total)}</b>`,
     ``,
-    `🌐 Langue du client : ${o.locale === "ar" ? "Arabe" : "Français"} (${LOCALE_META[o.locale].label})`,
     orderId && site ? `🗂 <a href="${esc(`${site}/admin/commandes/${orderId}`)}">Gérer dans le tableau de bord</a>` : null,
   ]
     .filter((x) => x !== null)

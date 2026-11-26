@@ -51,7 +51,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
               </a>
             </div>
             <p className="mt-2 text-xs text-muted">
-              Le message WhatsApp est pré-rempli en {order.locale === "ar" ? "arabe" : "français"} (langue de la cliente).
+              Le message WhatsApp est pré-rempli en arabe, la langue de la boutique.
             </p>
             <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
               <div>

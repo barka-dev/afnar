@@ -3,7 +3,6 @@ import Link from "next/link";
 import { dashboardStats, deliveryStats, shiftDate, todayInMorocco, type Bucket } from "@/lib/server/orders";
 import DeliveryChart from "./DeliveryChart";
 import { readProducts } from "@/lib/server/catalog";
-import { colorLabel } from "@/lib/products";
 import { Card, PageHeader, StatusBadge } from "../_ui/ui";
 import { dateTime, dh } from "../_ui/format";
 
@@ -132,7 +131,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                   <Link href={`/admin/produits/${p.id}`} className="flex items-center gap-3 rounded-md px-2 py-2.5 text-sm hover:bg-sand/60">
                     <span className="h-4 w-4 shrink-0 rounded-full border border-stone" style={{ background: c.hex }} />
                     <span className="min-w-0 flex-1 truncate">
-                      {p.name} <span className="text-muted">· {colorLabel(c, "fr")} · T{size}</span>
+                      {p.name} <span className="text-muted">· {c.name} · T{size}</span>
                     </span>
                     <span className={`tabular-nums ${n === 0 ? "text-sold" : "text-gold-dark"}`}>{n === 0 ? "Épuisé" : n}</span>
                   </Link>

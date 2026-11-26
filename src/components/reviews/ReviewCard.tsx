@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useI18n } from "@/i18n/I18nProvider";
-import { LOCALE_META, formatDate } from "@/i18n";
+import { formatDate } from "@/i18n";
 import { cityLabel } from "@/lib/cities";
 import { colorLabel, productName } from "@/lib/products";
 import { useCatalog } from "@/context/CatalogContext";
-import type { Review } from "@/lib/reviews";
+import { REVIEW_LANG_META, type Review } from "@/lib/reviews";
 import { CheckIcon } from "@/components/Icons";
 import Stars from "./Stars";
 import VoiceNote from "./VoiceNote";
@@ -17,7 +17,7 @@ const MAX_THUMBS = 3;
 export default function ReviewCard({ review: r, onOpenPhoto }: { review: Review; onOpenPhoto: (index: number) => void }) {
   const { t, locale, href } = useI18n();
   const tr = t.reviews;
-  const meta = LOCALE_META[r.lang];
+  const meta = REVIEW_LANG_META[r.lang];
   const photos = r.photos ?? [];
   const product = useCatalog().getProduct(r.product?.slug);
   const color = product?.colors.find((c) => c.name === r.product?.color);

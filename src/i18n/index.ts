@@ -1,4 +1,4 @@
-import fr, { type Dictionary } from "./dictionaries/fr";
+import type { Dictionary } from "./dictionaries/types";
 import ar from "./dictionaries/ar";
 import { SHIPPING } from "@/lib/config";
 import { cityLabel } from "@/lib/cities";
@@ -7,7 +7,7 @@ import { LOCALES, LOCALE_META, localePath, type Locale } from "./config";
 export type { Dictionary };
 export * from "./config";
 
-const DICTIONARIES: Record<Locale, Dictionary> = { fr, ar };
+const DICTIONARIES: Record<Locale, Dictionary> = { ar };
 
 export function getDictionary(locale: Locale): Dictionary {
   return DICTIONARIES[locale];

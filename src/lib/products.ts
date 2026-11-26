@@ -87,26 +87,37 @@ export function isProductAvailable(product: Product): boolean {
   return product.colors.some((c) => isColorAvailable(product, c));
 }
 
-/** Product copy in the requested language. `altName` is the name in the other script (shown as a subtitle). */
-export function localizeProduct(p: Product, locale: Locale) {
-  if (locale === "ar") return { name: p.nameAr, altName: p.name, ...p.ar };
-  return { name: p.name, altName: p.nameAr, shortDescription: p.shortDescription, description: p.description, fabric: p.fabric, details: p.details };
+/*
+ * Shop copy is Arabic. The French fields (name, description…) stay in the database as internal reference
+ * (admin, Telegram, colour ids) and are only shown as a fallback when an Arabic field is still empty.
+ * `_locale` is kept so the call sites stay ready if another language is ever added back.
+ */
+
+/** Product copy shown in the shop. */
+export function localizeProduct(p: Product, _locale: Locale) {
+  return {
+    name: p.nameAr || p.name,
+    shortDescription: p.ar.shortDescription || p.shortDescription,
+    description: p.ar.description || p.description,
+    fabric: p.ar.fabric || p.fabric,
+    details: p.ar.details.length ? p.ar.details : p.details,
+  };
 }
 
-export function productName(p: Product, locale: Locale): string {
-  return locale === "ar" ? p.nameAr : p.name;
+export function productName(p: Product, _locale: Locale): string {
+  return p.nameAr || p.name;
 }
 
-export function colorLabel(c: Pick<ProductColor, "name" | "nameAr">, locale: Locale): string {
-  return locale === "ar" ? c.nameAr : c.name;
+export function colorLabel(c: Pick<ProductColor, "name" | "nameAr">, _locale: Locale): string {
+  return c.nameAr || c.name;
 }
 
-export function categoryName(c: Pick<Category, "name" | "nameAr">, locale: Locale): string {
-  return locale === "ar" ? c.nameAr || c.name : c.name;
+export function categoryName(c: Pick<Category, "name" | "nameAr">, _locale: Locale): string {
+  return c.nameAr || c.name;
 }
 
-export function categoryDescription(c: Pick<Category, "description" | "descriptionAr">, locale: Locale): string {
-  return locale === "ar" ? c.descriptionAr || c.description : c.description;
+export function categoryDescription(c: Pick<Category, "description" | "descriptionAr">, _locale: Locale): string {
+  return c.descriptionAr || c.description;
 }
 
 export function totalStock(p: Pick<Product, "colors" | "sizes">): number {

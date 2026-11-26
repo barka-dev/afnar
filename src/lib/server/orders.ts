@@ -25,7 +25,7 @@ function toOrder(r: Row): OrderRecord {
     id: Number(r.id),
     ref: String(r.ref),
     status: isOrderStatus(r.status) ? r.status : "new",
-    locale: r.locale === "ar" ? "ar" : "fr",
+    locale: "ar", // the shop is Arabic only; older orders placed in French are handled in Arabic too
     lines: r.lines as OrderLine[],
     subtotal: Number(r.subtotal),
     shipping: Number(r.shipping),

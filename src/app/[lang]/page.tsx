@@ -29,7 +29,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
       <section className="mx-auto grid max-w-7xl items-center gap-12 px-4 pb-16 pt-8 sm:px-5 md:gap-16 md:px-10 md:pb-24 lg:grid-cols-2 lg:pt-16">
         <div className="max-w-xl">
           <p className="eyebrow animate-fade-in">{h.eyebrow}</p>
-          <h1 className="mt-5 animate-fade-in font-serif text-[2.9rem] font-light leading-[1.05] sm:mt-6 sm:text-6xl md:text-7xl" style={{ animationDelay: "120ms" }}>
+          <h1 className="mt-5 animate-fade-in font-serif text-[2.9rem] font-light leading-[1.05] sm:mt-6 sm:text-6xl md:text-7xl rtl:leading-[1.3]" style={{ animationDelay: "120ms" }}>
             {h.heroTitle1}
             <br />
             <em className="text-gold-dark">{h.heroTitle2}</em>
@@ -93,6 +93,36 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         </div>
       </section>
 
+      {/* ——— Values: one hadith on modesty, then the three values of the house ——— */}
+      <section className="mb-20 bg-sand/60 md:mb-28">
+        <div className="mx-auto max-w-7xl px-4 py-20 text-center sm:px-5 md:px-10 md:py-28">
+          <Reveal>
+            <div className="flex items-center justify-center gap-4 text-gold" aria-hidden="true">
+              <span className="h-px w-16 bg-gold/60" />
+              <StarMotif className="h-5 w-5" />
+              <span className="h-px w-16 bg-gold/60" />
+            </div>
+            <blockquote className="mt-8">
+              <p lang="ar" dir="rtl" className="font-serif text-[2.4rem] leading-[1.5] sm:text-5xl md:text-6xl">
+                {h.values.quote}
+              </p>
+              <footer className="mt-2 text-xs text-muted">{h.values.source}</footer>
+            </blockquote>
+          </Reveal>
+          <div className="mx-auto mt-14 grid max-w-5xl gap-10 text-start md:mt-16 md:grid-cols-3 md:gap-12">
+            {h.values.items.map((v, i) => (
+              <Reveal key={v.word} delay={i * 120}>
+                <p lang="ar" dir="rtl" className="w-fit font-serif text-3xl text-gold-dark">
+                  {v.word}
+                </p>
+                <p className="mt-1 font-serif text-2xl">{v.title}</p>
+                <p className="mt-2 text-sm leading-relaxed text-muted">{v.text}</p>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ——— Featured ——— */}
       <section className="mx-auto max-w-7xl px-4 sm:px-5 md:px-10">
         <Reveal className="flex flex-col items-start justify-between gap-4 sm:gap-6 md:flex-row md:items-end">
@@ -115,8 +145,23 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
 
       {/* ——— Maison / editorial ——— */}
       <section id="maison" className="mx-auto mt-20 grid max-w-7xl scroll-mt-24 items-center gap-10 px-4 sm:px-5 md:mt-32 md:gap-16 md:px-10 lg:grid-cols-2">
-        <Reveal variant="clip" className="relative aspect-[4/5] overflow-hidden bg-sand">
-          <AbayaArt color="#4A2F23" cut="kimono" className="h-full w-full" />
+        {/* Selection criteria, in the site's arch frame */}
+        <Reveal variant="clip" className="arch relative bg-sand px-6 pb-10 pt-20 sm:px-10 sm:pb-12 sm:pt-24">
+          <div className="text-center">
+            <StarMotif className="mx-auto h-6 w-6 text-gold" />
+            <h3 className="mt-4 font-serif text-3xl font-light">{h.criteriaTitle}</h3>
+          </div>
+          <ul className="mt-8 sm:mt-10">
+            {h.criteria.map(([title, text]) => (
+              <li key={title} className="flex gap-4 border-t border-stone/70 py-5 first:border-t-0 first:pt-0 last:pb-0">
+                <StarMotif className="mt-1.5 h-3.5 w-3.5 shrink-0 text-gold-dark" />
+                <div>
+                  <p className="font-serif text-xl">{title}</p>
+                  <p className="mt-1 text-sm leading-relaxed text-muted">{text}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
         </Reveal>
         <div className="max-w-lg">
           <Reveal>

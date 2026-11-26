@@ -17,6 +17,9 @@ export default function Reveal({ children, as: Tag = "div", variant = "up", dela
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // The "clip" variant starts fully clipped (clip-path: inset(100% 0 0 0)); some browsers then report it as never
+    // intersecting, so it would stay hidden for good. Watch its parent instead, which is laid out at the same place.
+    const target = variant === "clip" && el.parentElement ? el.parentElement : el;
     const io = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -26,9 +29,9 @@ export default function Reveal({ children, as: Tag = "div", variant = "up", dela
       },
       { threshold: 0.12, rootMargin: "0px 0px -40px 0px" }
     );
-    io.observe(el);
+    io.observe(target);
     return () => io.disconnect();
-  }, []);
+  }, [variant]);
 
   return (
     <Tag

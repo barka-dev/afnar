@@ -2,7 +2,7 @@
 
 Online store for abayas in the Moroccan market, built with **Next.js 16 (App Router), TypeScript and Tailwind CSS v4**.
 
-- **Bilingual: French and Arabic (RTL)**, with a FR | ع switcher. Prices in **DH / درهم**, a list of Moroccan cities, and validation for Moroccan mobile numbers (06/07…)
+- **In Arabic (right-to-left)**, written for Muslim women. Prices in **درهم**, a list of Moroccan cities, and validation for Moroccan mobile numbers (06/07…)
 - **Cash on delivery only**: no online payment
 - **Orders are sent to the store's Telegram in the background**: the customer confirms on the site and goes straight to the thank-you page. Each Telegram order has a one-tap link to the customer's WhatsApp, with a confirmation message already written in their language.
 - Colour and size selection on the product page. Unavailable products, colours and sizes are **grayed out and crossed with a red line**
@@ -53,7 +53,7 @@ Changing `ADMIN_PASSWORD` logs out every open session.
 | Delivery fees, free-delivery threshold, delivery times | `src/lib/config.ts` → `SHIPPING` |
 | Products, categories, stock, reviews | Admin dashboard → `/admin` |
 | Cities | `src/lib/cities.ts` |
-| UI text (French / Arabic) | `src/i18n/dictionaries/fr.ts`, `ar.ts` |
+| UI text (Arabic) | `src/i18n/dictionaries/ar.ts` |
 | Colours and fonts | `src/app/globals.css` → `@theme` |
 
 ### Stock and availability
@@ -65,20 +65,17 @@ Each colour has a stock number for each size, edited in **Admin → Produits**.
 ### Product photos
 Add photos per colour in **Admin → Produits**. They are resized automatically before upload. The first photo is the front view; the second is the detail view, which also appears on hover in the shop. Until a colour has photos, the shop shows an illustration tinted in that colour.
 
-## Languages
-Every page exists in French and Arabic: `/fr/...` and `/ar/...` (Arabic pages are right-to-left).
+## Language
+The shop is **in Arabic only** (right-to-left), at clean addresses: `afnar.ma/boutique`, `afnar.ma/produit/...`.
 
-- **Choosing the language:** a visitor who opens a link without a language (e.g. `/boutique`) is redirected by `src/proxy.ts`. The language they picked before (saved in a cookie by the FR | ع switcher) wins. Otherwise their browser language is used, then French.
-- **UI text:** `src/i18n/dictionaries/fr.ts` is the reference; `ar.ts` must have the same keys (TypeScript checks this).
-- **Product and category text:** French and Arabic fields in the admin forms. City names in Arabic are in `src/lib/cities.ts`.
-- **WhatsApp orders stay in French** (French product and colour names) so the team always gets the same format. The message ends with the customer's language so the advisor can reply in it.
-- **Fonts:** Arabic text uses Amiri (titles) and Tajawal (body); Latin text keeps Cormorant Garamond and Jost.
-- **SEO:** each page declares its canonical URL and its equivalent in the other language (`hreflang`).
-
-To add a language, add it to `LOCALES` / `LOCALE_META` in `src/i18n/config.ts`, create its dictionary, and add product fields for it.
+- **Old links:** `/ar/...` and `/fr/...` links (from the time the site was bilingual) are permanently redirected to the same page at its clean address by `src/proxy.ts`, with filters kept.
+- **UI text:** `src/i18n/dictionaries/ar.ts`. Its keys are listed in `types.ts` (TypeScript checks that none is missing).
+- **Product and category text:** fill in the **Arabic fields** in the admin forms: they are what customers see. The French fields stay as your internal reference (dashboard, Telegram) and are only shown if an Arabic field is left empty. City names in Arabic are in `src/lib/cities.ts`.
+- **For the team, French stays:** the admin dashboard and the Telegram order notice are in French. The WhatsApp confirmation sent to the customer is in Arabic.
+- **Fonts:** Arabic text uses Amiri (titles) and Tajawal (body); the AFNAR logo and numbers keep Cormorant Garamond and Jost.
+- **SEO:** each page declares its canonical URL.
 
 ## Pages
-All paths below are prefixed with `/fr` or `/ar`.
 - `/`: home (hero, trust points, collections, featured pieces, La Maison, how to order)
 - `/boutique`: shop with category filter (`?categorie=<category slug>`), sorting and an "in stock only" filter
 - `/produit/[slug]`: product page (gallery, colours, sizes, size guide, quantity)
@@ -96,7 +93,7 @@ And `/admin` for the dashboard (see above).
    - the customer's phone number is a **wa.me link**,
    - a **✅ Confirmer sur WhatsApp** button sits under the message.
 
-   Both open WhatsApp with the customer, with a confirmation message already written in their language (French or Arabic): their name, the reference, the items, the total and the address. Tap Send and you're done.
+   Both open WhatsApp with the customer, with a confirmation message already written in Arabic: their name, the reference, the items, the total and the address. Tap Send and you're done.
 5. The customer sees the thank-you page. If sending fails, they stay on the checkout with their cart, see a message and can try again. The full order is also written to the server logs.
 
 Basic protection: 5 orders per 10 minutes per visitor, plus a hidden anti-spam field.
