@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatDate } from "@/i18n";
 import { cityLabel } from "@/lib/cities";
-import { colorLabel, productName } from "@/lib/products";
+import { colorLabel, productName, sizeLabel } from "@/lib/products";
 import { useCatalog } from "@/context/CatalogContext";
 import { REVIEW_LANG_META, type Review } from "@/lib/reviews";
 import { CheckIcon } from "@/components/Icons";
@@ -95,7 +95,7 @@ export default function ReviewCard({ review: r, onOpenPhoto }: { review: Review;
             <Link href={href(`/produit/${product.slug}`)} className="link-underline inline-block py-1 text-ink">
               {productName(product, locale)}
               {color ? ` · ${colorLabel(color, locale)}` : ""}
-              {r.product?.size ? ` · ${t.common.sizeShort} ${r.product.size}` : ""}
+              {r.product?.size ? ` · ${t.common.sizeShort} ${sizeLabel(r.product.size, t.common.oneSize)}` : ""}
             </Link>
           </p>
         )}

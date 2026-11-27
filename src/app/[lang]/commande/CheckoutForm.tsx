@@ -11,7 +11,7 @@ import { MOROCCAN_CITIES, cityLabel } from "@/lib/cities";
 import { SHIPPING, shippingFee } from "@/lib/config";
 import { deliveryDelay } from "@/i18n";
 import { useI18n } from "@/i18n/I18nProvider";
-import { colorLabel, productName } from "@/lib/products";
+import { colorLabel, productName, sizeLabel } from "@/lib/products";
 import { useBottomBarFlag, useOutOfView, useScrollLock } from "@/lib/useScrollLock";
 import { normalizeMoroccanPhone } from "@/lib/format";
 import { LAST_ORDER_KEY, type OrderRequest, type OrderResponse } from "@/lib/order";
@@ -330,7 +330,7 @@ export default function CheckoutForm() {
                       <p className="whitespace-nowrap text-sm">{formatPrice(i.lineTotal)}</p>
                     </div>
                     <p className="text-xs text-muted">
-                      {colorLabel(i.colorData, locale)} · {t.common.size} {i.size}
+                      {colorLabel(i.colorData, locale)} · {t.common.size} {sizeLabel(i.size, t.common.oneSize)}
                     </p>
                     <div className="mt-2 flex items-center justify-between">
                       <QuantityControl small value={i.qty} max={i.maxQty} onChange={(q) => updateQty(i.key, q)} />

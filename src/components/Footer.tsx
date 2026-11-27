@@ -4,7 +4,7 @@ import { getDictionary, localePath, shippingText, type Locale } from "@/i18n";
 import { categoryName, type Category } from "@/lib/products";
 import { StarMotif } from "./Icons";
 
-export default function Footer({ locale, categories }: { locale: Locale; categories: Category[] }) {
+export default function Footer({ locale, categories, comingSoon = [] }: { locale: Locale; categories: Category[]; comingSoon?: string[] }) {
   const t = getDictionary(locale);
   const f = t.footer;
   const s = shippingText(locale);
@@ -28,6 +28,7 @@ export default function Footer({ locale, categories }: { locale: Locale; categor
                   <Link href={localePath(locale, `/boutique?categorie=${c.slug}`)} className="link-underline inline-block py-1 hover:text-ivory">
                     {categoryName(c, locale)}
                   </Link>
+                  {comingSoon.includes(c.slug) && <span className="ms-2 text-xs text-gold">{t.common.comingSoon}</span>}
                 </li>
               ))}
             </ul>

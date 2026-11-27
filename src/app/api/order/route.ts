@@ -4,7 +4,7 @@ import { MOROCCAN_CITIES } from "@/lib/cities";
 import { shippingFee } from "@/lib/config";
 import { generateOrderRef, normalizeMoroccanPhone } from "@/lib/format";
 import { revalidateTag } from "next/cache";
-import { SIZES, stockFor, type Product, type Size } from "@/lib/products";
+import { ONE_SIZE, stockFor, type Product, type Size } from "@/lib/products";
 import type { OrderLine, OrderPayload, OrderRequest, OrderResponse } from "@/lib/order";
 import { buildOrderMessage, sendOrderToTelegram } from "@/lib/server/telegram";
 import { TAGS, readProducts } from "@/lib/server/catalog";
@@ -82,13 +82,20 @@ export async function POST(request: Request) {
   for (const it of input.items) {
     const product = products.find((p) => p.slug === String(it?.slug));
     const color = product?.colors.find((c) => c.name === it?.color);
-    const size = String(it?.size) as Size;
+    const size: Size = String(it?.size);
     const qty = Math.floor(Number(it?.qty));
-    if (!product || !color || !SIZES.includes(size) || !product.sizes.includes(size) || !(qty >= 1 && qty <= MAX_QTY)) {
+    if (!product || !color || !product.sizes.includes(size) || !(qty >= 1 && qty <= MAX_QTY)) {
       return reply({ ok: false, error: "invalid" }, 400);
     }
     if (qty > stockFor(color, size)) return reply({ ok: false, error: "stock" }, 409);
-    lines.push({ slug: product.slug, name: product.name, color: color.name, size, qty, unitPrice: product.price });
+    // A set takes its stock from its two pieces: the abaya in the chosen size and the one-size khimar
+    const parts = product.bundle
+      ? [
+          { slug: product.bundle.abaya.slug, color: product.bundle.abaya.color, size, qty },
+          { slug: product.bundle.khimar.slug, color: product.bundle.khimar.color, size: ONE_SIZE, qty },
+        ]
+      : undefined;
+    lines.push({ slug: product.slug, name: product.name, color: color.name, size, qty, unitPrice: product.price, ...(parts ? { parts } : {}) });
   }
 
   const subtotal = lines.reduce((n, l) => n + l.qty * l.unitPrice, 0);

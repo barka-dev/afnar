@@ -21,9 +21,14 @@ export default async function ProductsPage() {
         title="Produits"
         subtitle={`${products.length} produit${products.length > 1 ? "s" : ""} · ${products.filter((p) => p.active).length} en ligne`}
         actions={
-          <Link href="/admin/produits/nouveau" className="inline-flex min-h-10 items-center rounded-md bg-ink px-4 text-sm text-ivory hover:bg-gold-dark">
-            + Nouveau produit
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/admin/produits/ensemble" className="inline-flex min-h-10 items-center rounded-md border border-stone bg-white px-4 text-sm hover:border-ink">
+              + Nouvel ensemble
+            </Link>
+            <Link href="/admin/produits/nouveau" className="inline-flex min-h-10 items-center rounded-md bg-ink px-4 text-sm text-ivory hover:bg-gold-dark">
+              + Nouveau produit
+            </Link>
+          </div>
         }
       />
 
@@ -46,10 +51,16 @@ export default async function ProductsPage() {
                 <div className="min-w-0 flex-1">
                   <Link href={`/admin/produits/${p.id}`} className="block truncate after:absolute after:inset-0">
                     {p.name}
+                    {p.bundle && <span className="ms-2 rounded bg-gold/15 px-1.5 py-0.5 text-[0.65rem] text-gold-dark">Ensemble</span>}
                     {!p.active && <span className="ms-2 rounded bg-stone/50 px-1.5 py-0.5 text-[0.65rem] text-muted">Masqué</span>}
                   </Link>
                   <p className="truncate text-xs text-muted">
-                    {catName(p.category)} · {p.colors.length} couleur{p.colors.length > 1 ? "s" : ""}
+                    {catName(p.category)} ·{" "}
+                    {p.bundle
+                      ? p.bundleParts
+                        ? p.bundleParts.map((b) => `${b.name} (${b.color})`).join(" + ")
+                        : "pièce introuvable"
+                      : `${p.colors.length} couleur${p.colors.length > 1 ? "s" : ""}`}
                     {p.featured ? " · Sélection" : ""}
                     {p.isNew ? " · Nouveau" : ""}
                   </p>

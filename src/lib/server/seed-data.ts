@@ -1,4 +1,4 @@
-import { SIZES, type Cut, type Size, type ProductColor } from "@/lib/products";
+import { STANDARD_SIZES, type Cut, type Size, type ProductColor } from "@/lib/products";
 
 /**
  * The original catalogue. Imported into the database the first time the site starts with an empty database;
@@ -30,7 +30,7 @@ export const SEED_CATEGORIES: { slug: Cut; name: string; nameAr: string; descrip
   { slug: "kimono", name: "Kimonos", nameAr: "كيمونو", description: "Ouvertes, à superposer", descriptionAr: "مفتوحة، تُلبس فوق الملابس", color: "#6B6A4B" },
 ];
 
-const ALL: Size[] = [...SIZES];
+const ALL: Size[] = [...STANDARD_SIZES];
 
 export const SEED_PRODUCTS: SeedProduct[] = [
   {
@@ -55,9 +55,9 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       details: ["قصّة مستقيمة متّسعة", "أساور بأزرار", "قماش معتم غير شفاف", "غسيل لطيف على 30°"],
     },
     colors: [
-      { name: "Noir", nameAr: "أسود", hex: "#141414", stock: { "52": 3, "54": 5, "56": 0, "58": 2, "60": 1 } },
-      { name: "Bleu nuit", nameAr: "أزرق ليلي", hex: "#1C2541", stock: { "52": 0, "54": 2, "56": 4, "58": 0, "60": 0 } },
-      { name: "Taupe", nameAr: "بني رمادي", hex: "#8B7D6B", stock: { "52": 0, "54": 0, "56": 0, "58": 0, "60": 0 } },
+      { name: "Noir", nameAr: "أسود", hex: "#141414", stock: { "S": 3, "M": 5, "L": 0, "XL": 2, "XXL": 1 } },
+      { name: "Bleu nuit", nameAr: "أزرق ليلي", hex: "#1C2541", stock: { "S": 0, "M": 2, "L": 4, "XL": 0, "XXL": 0 } },
+      { name: "Taupe", nameAr: "بني رمادي", hex: "#8B7D6B", stock: { "S": 0, "M": 0, "L": 0, "XL": 0, "XXL": 0 } },
     ],
   },
   {
@@ -81,9 +81,9 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       details: ["تطريز بخيط ذهبي", "ياقة دائرية", "بطانة عند الكتفين", "يُنصح بالتنظيف الجاف"],
     },
     colors: [
-      { name: "Noir", nameAr: "أسود", hex: "#121212", stock: { "52": 1, "54": 2, "56": 3, "58": 1, "60": 0 } },
-      { name: "Bordeaux", nameAr: "عنابي", hex: "#5E1A26", stock: { "52": 0, "54": 1, "56": 2, "58": 0, "60": 1 } },
-      { name: "Vert émeraude", nameAr: "أخضر زمردي", hex: "#0F4C3A", stock: { "52": 2, "54": 0, "56": 1, "58": 2, "60": 0 } },
+      { name: "Noir", nameAr: "أسود", hex: "#121212", stock: { "S": 1, "M": 2, "L": 3, "XL": 1, "XXL": 0 } },
+      { name: "Bordeaux", nameAr: "عنابي", hex: "#5E1A26", stock: { "S": 0, "M": 1, "L": 2, "XL": 0, "XXL": 1 } },
+      { name: "Vert émeraude", nameAr: "أخضر زمردي", hex: "#0F4C3A", stock: { "S": 2, "M": 0, "L": 1, "XL": 2, "XXL": 0 } },
     ],
   },
   {
@@ -97,7 +97,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       "Inspirée de la coupe papillon, Farasha offre une liberté de mouvement incomparable. Ses manches amples se prolongent jusqu'à la taille pour un drapé gracieux à chaque pas.",
     fabric: "Mousseline doublée",
     details: ["Coupe papillon", "Doublure intégrale", "Taille unique ajustable", "Lavage main"],
-    sizes: ["54", "56", "58"],
+    sizes: ["M", "L", "XL"],
     isNew: true,
     featured: true,
     ar: {
@@ -108,9 +108,9 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       details: ["قصّة فراشة", "بطانة كاملة", "مقاس واحد قابل للتعديل", "غسيل يدوي"],
     },
     colors: [
-      { name: "Beige sable", nameAr: "بيج رملي", hex: "#D4C1A5", stock: { "54": 2, "56": 3, "58": 1 } },
-      { name: "Rose poudré", nameAr: "وردي فاتح", hex: "#D8B4AE", stock: { "54": 0, "56": 2, "58": 0 } },
-      { name: "Noir", nameAr: "أسود", hex: "#151515", stock: { "54": 4, "56": 0, "58": 2 } },
+      { name: "Beige sable", nameAr: "بيج رملي", hex: "#D4C1A5", stock: { "M": 2, "L": 3, "XL": 1 } },
+      { name: "Rose poudré", nameAr: "وردي فاتح", hex: "#D8B4AE", stock: { "M": 0, "L": 2, "XL": 0 } },
+      { name: "Noir", nameAr: "أسود", hex: "#151515", stock: { "M": 4, "L": 0, "XL": 2 } },
     ],
   },
   {
@@ -134,9 +134,9 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       details: ["واجهة مفتوحة", "حزام قابل للفصل", "جيوب جانبية", "غسيل على 30°"],
     },
     colors: [
-      { name: "Crème", nameAr: "كريمي", hex: "#EDE3D1", stock: { "52": 2, "54": 3, "56": 2, "58": 1, "60": 1 } },
-      { name: "Kaki", nameAr: "كاكي", hex: "#6B6A4B", stock: { "52": 0, "54": 1, "56": 0, "58": 2, "60": 0 } },
-      { name: "Noir", nameAr: "أسود", hex: "#161616", stock: { "52": 1, "54": 0, "56": 3, "58": 0, "60": 2 } },
+      { name: "Crème", nameAr: "كريمي", hex: "#EDE3D1", stock: { "S": 2, "M": 3, "L": 2, "XL": 1, "XXL": 1 } },
+      { name: "Kaki", nameAr: "كاكي", hex: "#6B6A4B", stock: { "S": 0, "M": 1, "L": 0, "XL": 2, "XXL": 0 } },
+      { name: "Noir", nameAr: "أسود", hex: "#161616", stock: { "S": 1, "M": 0, "L": 3, "XL": 0, "XXL": 2 } },
     ],
   },
   {
@@ -160,8 +160,8 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       details: ["لا يتجعّد", "أكمام مستقيمة", "سريع الجفاف", "غسيل بالآلة على 30°"],
     },
     colors: [
-      { name: "Gris perle", nameAr: "رمادي لؤلؤي", hex: "#A7A39C", stock: { "52": 2, "54": 2, "56": 0, "58": 1, "60": 0 } },
-      { name: "Noir", nameAr: "أسود", hex: "#131313", stock: { "52": 4, "54": 6, "56": 5, "58": 3, "60": 2 } },
+      { name: "Gris perle", nameAr: "رمادي لؤلؤي", hex: "#A7A39C", stock: { "S": 2, "M": 2, "L": 0, "XL": 1, "XXL": 0 } },
+      { name: "Noir", nameAr: "أسود", hex: "#131313", stock: { "S": 4, "M": 6, "L": 5, "XL": 3, "XXL": 2 } },
     ],
   },
   {
@@ -185,8 +185,8 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       details: ["تطريز طويل بخيط ذهبي", "لمعة ساتان", "أكمام متّسعة", "تنظيف جاف"],
     },
     colors: [
-      { name: "Noir", nameAr: "أسود", hex: "#0F0F0F", stock: { "52": 0, "54": 1, "56": 1, "58": 0, "60": 0 } },
-      { name: "Bleu roi", nameAr: "أزرق ملكي", hex: "#1F3A8A", stock: { "52": 0, "54": 0, "56": 2, "58": 1, "60": 0 } },
+      { name: "Noir", nameAr: "أسود", hex: "#0F0F0F", stock: { "S": 0, "M": 1, "L": 1, "XL": 0, "XXL": 0 } },
+      { name: "Bleu roi", nameAr: "أزرق ملكي", hex: "#1F3A8A", stock: { "S": 0, "M": 0, "L": 2, "XL": 1, "XXL": 0 } },
     ],
   },
   {
@@ -200,7 +200,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       "Amira se distingue par ses tons chauds et sa ceinture à nouer qui marque délicatement la taille. Une abaya ouverte qui s'accorde aussi bien avec une robe qu'avec un ensemble.",
     fabric: "Crêpe texturé",
     details: ["Ceinture à nouer", "Devant ouvert", "Manches larges", "Lavage délicat"],
-    sizes: ["52", "54", "56", "58"],
+    sizes: ["S", "M", "L", "XL"],
     isNew: true,
     ar: {
       shortDescription: "مفتوحة، بحزام، وبألوان دافئة.",
@@ -210,8 +210,8 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       details: ["حزام للعقد", "واجهة مفتوحة", "أكمام واسعة", "غسيل لطيف"],
     },
     colors: [
-      { name: "Chocolat", nameAr: "بني شوكولا", hex: "#4A2F23", stock: { "52": 1, "54": 2, "56": 1, "58": 0 } },
-      { name: "Camel", nameAr: "كاميل", hex: "#B08458", stock: { "52": 0, "54": 0, "56": 2, "58": 1 } },
+      { name: "Chocolat", nameAr: "بني شوكولا", hex: "#4A2F23", stock: { "S": 1, "M": 2, "L": 1, "XL": 0 } },
+      { name: "Camel", nameAr: "كاميل", hex: "#B08458", stock: { "S": 0, "M": 0, "L": 2, "XL": 1 } },
     ],
   },
   {
@@ -225,7 +225,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       "Sofia, notre coupe papillon la plus légère, a rencontré un franc succès. Elle sera bientôt de retour — contactez-nous sur WhatsApp pour être prévenue.",
     fabric: "Mousseline",
     details: ["Coupe papillon", "Très légère", "Doublure intégrale", "Lavage main"],
-    sizes: ["54", "56", "58"],
+    sizes: ["M", "L", "XL"],
     ar: {
       shortDescription: "فراشة من الموسلين — تعود قريباً.",
       description:
@@ -234,8 +234,8 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       details: ["قصّة فراشة", "خفيفة جداً", "بطانة كاملة", "غسيل يدوي"],
     },
     colors: [
-      { name: "Lilas", nameAr: "ليلكي", hex: "#A898B5", stock: { "54": 0, "56": 0, "58": 0 } },
-      { name: "Noir", nameAr: "أسود", hex: "#141414", stock: { "54": 0, "56": 0, "58": 0 } },
+      { name: "Lilas", nameAr: "ليلكي", hex: "#A898B5", stock: { "M": 0, "L": 0, "XL": 0 } },
+      { name: "Noir", nameAr: "أسود", hex: "#141414", stock: { "M": 0, "L": 0, "XL": 0 } },
     ],
   },
   {
@@ -258,9 +258,9 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       details: ["قصّة رصينة", "قماش ناعم ومعتم", "لكل المواسم", "غسيل بالآلة على 30°"],
     },
     colors: [
-      { name: "Noir", nameAr: "أسود", hex: "#151515", stock: { "52": 3, "54": 3, "56": 2, "58": 2, "60": 1 } },
-      { name: "Marine", nameAr: "كحلي", hex: "#22304A", stock: { "52": 1, "54": 0, "56": 2, "58": 0, "60": 0 } },
-      { name: "Mauve", nameAr: "موف", hex: "#7A5C74", stock: { "52": 0, "54": 1, "56": 1, "58": 0, "60": 0 } },
+      { name: "Noir", nameAr: "أسود", hex: "#151515", stock: { "S": 3, "M": 3, "L": 2, "XL": 2, "XXL": 1 } },
+      { name: "Marine", nameAr: "كحلي", hex: "#22304A", stock: { "S": 1, "M": 0, "L": 2, "XL": 0, "XXL": 0 } },
+      { name: "Mauve", nameAr: "موف", hex: "#7A5C74", stock: { "S": 0, "M": 1, "L": 1, "XL": 0, "XXL": 0 } },
     ],
   },
   {
@@ -274,7 +274,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       "Zineb est taillé dans un lin lavé d'une grande douceur, rehaussé de finitions passepoilées. Un kimono long et structuré qui apporte une touche d'exception aux tenues de jour.",
     fabric: "Lin lavé",
     details: ["Lin lavé", "Finitions passepoilées", "Fentes latérales", "Lavage 30°"],
-    sizes: ["54", "56", "58", "60"],
+    sizes: ["M", "L", "XL", "XXL"],
     ar: {
       shortDescription: "كتان مغسول، بحواشٍ متقنة.",
       description:
@@ -283,8 +283,8 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       details: ["كتان مغسول", "حواشٍ متقنة", "فتحات جانبية", "غسيل على 30°"],
     },
     colors: [
-      { name: "Écru", nameAr: "عاجي", hex: "#E5DCCB", stock: { "54": 1, "56": 2, "58": 0, "60": 1 } },
-      { name: "Olive", nameAr: "زيتوني", hex: "#5B5E3C", stock: { "54": 0, "56": 0, "58": 0, "60": 0 } },
+      { name: "Écru", nameAr: "عاجي", hex: "#E5DCCB", stock: { "M": 1, "L": 2, "XL": 0, "XXL": 1 } },
+      { name: "Olive", nameAr: "زيتوني", hex: "#5B5E3C", stock: { "M": 0, "L": 0, "XL": 0, "XXL": 0 } },
     ],
   },
 ];

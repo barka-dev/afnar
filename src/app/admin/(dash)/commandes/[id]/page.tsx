@@ -7,6 +7,7 @@ import { customerWhatsAppLink } from "@/lib/server/telegram";
 import { STATUS_LABEL } from "@/lib/order-status";
 import { Card, PageHeader, StatusBadge } from "../../../_ui/ui";
 import { dateTime, dh, phone } from "../../../_ui/format";
+import { teamSize } from "@/lib/format";
 import OrderActions from "./OrderActions";
 
 export const dynamic = "force-dynamic";
@@ -88,7 +89,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                         l.name
                       )}
                       <p className="text-xs text-muted">
-                        {l.color} · T{l.size} · {l.qty} × {dh(l.unitPrice)}
+                        {l.color} · {teamSize(l.size)} · {l.qty} × {dh(l.unitPrice)}
                       </p>
                     </div>
                     <span className="tabular-nums">{dh(l.qty * l.unitPrice)}</span>

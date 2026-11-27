@@ -8,7 +8,7 @@ import { CloseIcon, CashIcon } from "./Icons";
 import ProductImage from "./ProductImage";
 import QuantityControl from "./QuantityControl";
 import { useI18n } from "@/i18n/I18nProvider";
-import { colorLabel, productName } from "@/lib/products";
+import { colorLabel, productName, sizeLabel } from "@/lib/products";
 import { useScrollLock } from "@/lib/useScrollLock";
 
 export default function CartDrawer() {
@@ -95,7 +95,7 @@ export default function CartDrawer() {
                       <p className="whitespace-nowrap text-sm">{formatPrice(item.lineTotal)}</p>
                     </div>
                     <p className="mt-1 text-xs text-muted">
-                      {colorLabel(item.colorData, locale)} · {t.common.size} {item.size}
+                      {colorLabel(item.colorData, locale)} · {t.common.size} {sizeLabel(item.size, t.common.oneSize)}
                     </p>
                     <div className="mt-auto flex items-center justify-between pt-3">
                       <QuantityControl

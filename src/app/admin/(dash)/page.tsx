@@ -5,6 +5,7 @@ import DeliveryChart from "./DeliveryChart";
 import { readProducts } from "@/lib/server/catalog";
 import { Card, PageHeader, StatusBadge } from "../_ui/ui";
 import { dateTime, dh } from "../_ui/format";
+import { teamSize } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Tableau de bord" };
 export const dynamic = "force-dynamic";
@@ -40,7 +41,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const range = period(await searchParams);
   const [s, products, delivery] = await Promise.all([dashboardStats(), readProducts(), deliveryStats(range.from, range.to, range.bucket)]);
   const low = products
-    .filter((p) => p.active)
+    // sets have no stock of their own (it comes from their abaya and khimar, listed themselves)
+    .filter((p) => p.active && !p.bundle)
     .flatMap((p) => p.colors.flatMap((c) => p.sizes.filter((size) => (c.stock[size] ?? 0) <= LOW).map((size) => ({ p, c, size, n: c.stock[size] ?? 0 }))))
     .sort((a, b) => a.n - b.n);
 
@@ -131,7 +133,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                   <Link href={`/admin/produits/${p.id}`} className="flex items-center gap-3 rounded-md px-2 py-2.5 text-sm hover:bg-sand/60">
                     <span className="h-4 w-4 shrink-0 rounded-full border border-stone" style={{ background: c.hex }} />
                     <span className="min-w-0 flex-1 truncate">
-                      {p.name} <span className="text-muted">· {c.name} · T{size}</span>
+                      {p.name} <span className="text-muted">· {c.name} · {teamSize(size)}</span>
                     </span>
                     <span className={`tabular-nums ${n === 0 ? "text-sold" : "text-gold-dark"}`}>{n === 0 ? "Épuisé" : n}</span>
                   </Link>

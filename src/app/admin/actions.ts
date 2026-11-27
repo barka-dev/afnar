@@ -10,7 +10,7 @@ import { assertAdmin, Unauthorized } from "@/lib/server/auth";
 import { SESSION_COOKIE, SESSION_DAYS, adminConfigured, checkPassword, createSessionToken } from "@/lib/server/session";
 import { deleteOrder, setOrderStatus, updateOrderNote } from "@/lib/server/orders";
 import { isOrderStatus } from "@/lib/order-status";
-import { CUTS, SIZES, slugify, type Cut, type ProductColor, type Size } from "@/lib/products";
+import { CUTS, ONE_SIZE, isValidSize, normalizeSize, slugify, sortSizes, type Cut, type ProductColor, type Size } from "@/lib/products";
 import { CITIES } from "@/lib/cities";
 
 export type ActionResult = { ok: true; id?: number } | { ok: false; error: string; fields?: Record<string, string> };
@@ -172,6 +172,19 @@ export interface ProductInput {
   active: boolean;
 }
 
+/** Saves the size list offered in the product form (× removes a size, "+ Ajouter" adds one). Admin only: the shop doesn't read it. */
+export async function saveSizeOptions(input: string[]): Promise<ActionResult> {
+  return guarded(async () => {
+    const typed = (Array.isArray(input) ? input : []).map((s) => normalizeSize(String(s)));
+    const sizes = sortSizes([...new Set(typed)].filter((s) => isValidSize(s) && s !== ONE_SIZE)).slice(0, 40);
+    const sql = await db();
+    await sql`
+      insert into settings (key, value) values ('size_options', ${sql.json(sizes)})
+      on conflict (key) do update set value = excluded.value`;
+    return { ok: true };
+  });
+}
+
 export async function saveProduct(input: ProductInput): Promise<ActionResult> {
   return guarded(async () => {
     const fields: Record<string, string> = {};
@@ -179,13 +192,18 @@ export async function saveProduct(input: ProductInput): Promise<ActionResult> {
     const slug = slugify(line(input.slug, 80) || name);
     const price = int(input.price);
     const compare = input.compareAtPrice === null || input.compareAtPrice === "" ? null : int(input.compareAtPrice);
-    const sizes = SIZES.filter((s) => input.sizes?.includes(s));
+    // Standard sizes and the admin's custom ones ("M/L"…), cleaned, without duplicates, in wearing order
+    const typed = (Array.isArray(input.sizes) ? input.sizes : []).map((s) => normalizeSize(String(s))).filter(Boolean);
+    const badSize = typed.find((s) => !isValidSize(s));
+    const sizes = sortSizes([...new Set(typed)]).slice(0, 15);
 
     if (!name) fields.name = "Obligatoire";
     if (!slug) fields.slug = "Obligatoire";
     if (!Number.isInteger(price) || price < 1 || price > 1_000_000) fields.price = "Prix invalide";
     if (compare !== null && (!Number.isInteger(compare) || compare <= price)) fields.compareAtPrice = "Doit être supérieur au prix";
-    if (!sizes.length) fields.sizes = "Choisissez au moins une taille";
+    if (badSize) fields.sizes = `Taille « ${badSize} » invalide : lettres et chiffres, séparés par « / » (ex. M/L)`;
+    else if (!sizes.length) fields.sizes = "Choisissez au moins une taille";
+    else if (sizes.includes(ONE_SIZE) && sizes.length > 1) fields.sizes = "« Taille unique » ne se combine pas avec d'autres tailles";
 
     const colors: ProductColor[] = [];
     const seen = new Set<string>();
@@ -234,6 +252,87 @@ export async function saveProduct(input: ProductInput): Promise<ActionResult> {
       }),
       sizes: sql.json(sizes),
       colors: sql.json(colors as unknown as postgres.JSONValue),
+      is_new: !!input.isNew,
+      featured: !!input.featured,
+      active: !!input.active,
+    };
+    let id = input.id;
+    if (id) {
+      await sql`update products set ${sql(v)}, updated_at = now() where id = ${id}`;
+    } else {
+      const [{ max }] = await sql<{ max: number }[]>`select coalesce(max(position), -1)::int as max from products`;
+      [{ id }] = await sql<{ id: number }[]>`insert into products ${sql({ ...v, position: max + 1 })} returning id`;
+    }
+    refreshShop([TAGS.catalog]);
+    return { ok: true, id };
+  });
+}
+
+// ——— Sets (الأطقم): one abaya colour + one matching khimar colour, at the set's own price ———
+
+export interface EnsembleInput {
+  id?: number;
+  slug: string;
+  name: string;
+  nameAr: string;
+  abaya: { slug: string; color: string };
+  khimar: { slug: string; color: string };
+  price: number | string;
+  shortDescription: string;
+  ar: { shortDescription: string; description: string };
+  /** The set's own photos (styled together); empty = the abaya's and khimar's photos are shown */
+  images: string[];
+  isNew: boolean;
+  featured: boolean;
+  active: boolean;
+}
+
+export async function saveEnsemble(input: EnsembleInput): Promise<ActionResult> {
+  return guarded(async () => {
+    const fields: Record<string, string> = {};
+    const name = line(input.name, 120);
+    const slug = slugify(line(input.slug, 80) || name);
+    const price = int(input.price);
+    if (!name) fields.name = "Obligatoire";
+    if (!slug) fields.slug = "Obligatoire";
+    if (!Number.isInteger(price) || price < 1 || price > 1_000_000) fields.price = "Prix invalide";
+
+    const sql = await db();
+    const pieces = await sql<{ slug: string; price: number; sizes: string[]; colors: ProductColor[]; bundle: unknown }[]>`
+      select slug, price, sizes, colors, bundle from products where slug = any(${[input.abaya?.slug ?? "", input.khimar?.slug ?? ""]})`;
+    const abaya = pieces.find((p) => p.slug === input.abaya?.slug && !p.bundle);
+    const khimar = pieces.find((p) => p.slug === input.khimar?.slug && !p.bundle);
+    const abayaColor = abaya?.colors.find((c) => c.name === input.abaya.color);
+    const khimarColor = khimar?.colors.find((c) => c.name === input.khimar.color);
+    if (!abaya || !abayaColor || abaya.sizes.includes(ONE_SIZE)) fields.abaya = "Choisissez une abaya et sa couleur";
+    if (!khimar || !khimarColor || !khimar.sizes.includes(ONE_SIZE)) fields.khimar = "Choisissez un khimar (taille unique) et sa couleur";
+    if (Object.keys(fields).length) return { ok: false, error: "Vérifiez les champs en rouge.", fields };
+
+    const [cat] = await sql<{ id: number }[]>`select id from categories where slug = 'ensembles'`;
+    const v = {
+      slug,
+      category_id: cat?.id ?? null,
+      cut: "ensemble",
+      name,
+      name_ar: line(input.nameAr, 120),
+      price,
+      compare_at_price: null, // shown automatically: the abaya + khimar bought separately
+      short_description: line(input.shortDescription, 300),
+      description: "",
+      fabric: "",
+      details: sql.json([]),
+      ar: sql.json({
+        shortDescription: line(input.ar?.shortDescription, 300),
+        description: text(input.ar?.description, 4000),
+        fabric: "",
+        details: [],
+      }),
+      sizes: sql.json([]), // worked out from the abaya when the catalogue is read
+      // One colour holding the set's own photos; its name and stock are worked out from the pieces
+      colors: sql.json([
+        { name: "Ensemble", nameAr: "", hex: abayaColor!.hex, images: (Array.isArray(input.images) ? input.images : []).filter(isMediaUrl).slice(0, 12), stock: {} },
+      ] as unknown as postgres.JSONValue),
+      bundle: sql.json({ abaya: { slug: abaya!.slug, color: abayaColor!.name }, khimar: { slug: khimar!.slug, color: khimarColor!.name } }),
       is_new: !!input.isNew,
       featured: !!input.featured,
       active: !!input.active,
@@ -316,7 +415,7 @@ export async function saveReview(input: ReviewInput): Promise<ActionResult> {
       voice: null as unknown,
       product_slug: line(input.productSlug, 80) || null,
       product_color: line(input.productColor, 40) || null,
-      product_size: SIZES.includes(input.productSize as Size) ? input.productSize : null,
+      product_size: isValidSize(normalizeSize(String(input.productSize ?? ""))) ? normalizeSize(String(input.productSize)) : null,
       verified: !!input.verified,
       published: !!input.published,
     };

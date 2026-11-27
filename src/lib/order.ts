@@ -13,6 +13,11 @@ export interface OrderLine {
   size: string;
   qty: number;
   unitPrice: number;
+  /**
+   * Set only: the pieces whose stock this line takes (abaya in the chosen size + khimar), recorded when the
+   * order is placed so cancelling / returning gives back exactly those pieces even if the set changes later.
+   */
+  parts?: { slug: string; color: string; size: string; qty: number }[];
 }
 
 /** What the checkout sends to POST /api/order. Prices are NOT sent: the server recomputes them from the catalogue. */

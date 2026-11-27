@@ -5,6 +5,11 @@ export function formatDH(value: number): string {
   return `${Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} DH`;
 }
 
+/** "XL" -> "XL", "TU" -> "Taille unique", old length "56" -> "T56": sizes as the store team reads them (admin, Telegram). */
+export function teamSize(size: string): string {
+  return size === "TU" ? "Taille unique" : /^\d+$/.test(size) ? `T${size}` : size;
+}
+
 /** Normalises a Moroccan mobile number to 06XXXXXXXX / 07XXXXXXXX, or null if invalid. */
 export function normalizeMoroccanPhone(input: string): string | null {
   const digits = input.replace(/[\s.\-()]/g, "");

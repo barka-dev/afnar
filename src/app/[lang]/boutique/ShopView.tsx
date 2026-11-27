@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ProductCard from "@/components/ProductCard";
 import Reveal from "@/components/Reveal";
-import { categoryDescription, categoryName, isProductAvailable } from "@/lib/products";
+import { categoryDescription, categoryName, comingSoonSlugs, isProductAvailable } from "@/lib/products";
 import { useCatalog } from "@/context/CatalogContext";
 import { useI18n } from "@/i18n/I18nProvider";
+import { STORE } from "@/lib/config";
+import { StarMotif, WhatsAppIcon } from "@/components/Icons";
 
 type Sort = "featured" | "price-asc" | "price-desc" | "new";
 
@@ -55,6 +57,8 @@ export default function ShopView({ initialCategory }: { initialCategory: string 
 
   const cat = category === "all" ? undefined : getCategory(category);
   const current = cat ? { label: categoryName(cat, locale), description: categoryDescription(cat, locale) } : null;
+  const comingSoon = useMemo(() => comingSoonSlugs(categories, all), [categories, all]);
+  const isComingSoon = !!cat && comingSoon.has(cat.slug);
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-5 md:px-10">
@@ -80,6 +84,7 @@ export default function ShopView({ initialCategory }: { initialCategory: string 
               }`}
             >
               {c.label}
+              {c.slug !== "all" && comingSoon.has(c.slug) && <span className="ms-1.5 text-gold-dark">· {t.common.comingSoon}</span>}
             </button>
           ))}
         </div>
@@ -116,7 +121,30 @@ export default function ShopView({ initialCategory }: { initialCategory: string 
           </Reveal>
         ))}
       </div>
-      {products.length === 0 && <p className="py-24 text-center text-muted">{sh.noResults}</p>}
+      {products.length === 0 &&
+        (isComingSoon && current ? (
+          // Category announced but not stocked yet: say so warmly and offer to be told when it arrives
+          <div className="mx-auto max-w-md py-20 text-center sm:py-24">
+            <StarMotif className="mx-auto h-8 w-8 text-gold" />
+            <p className="mt-6 font-serif text-3xl font-light">{sh.comingSoonTitle}</p>
+            <p className="mt-4 text-sm leading-relaxed text-muted">{sh.comingSoonText(current.label)}</p>
+            <div className="mt-8 flex flex-col items-center gap-4">
+              <a
+                href={`https://wa.me/${STORE.whatsappNumber}?text=${encodeURIComponent(t.whatsapp.comingSoon(STORE.name, current.label))}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-primary"
+              >
+                <WhatsAppIcon className="h-4 w-4" /> {sh.comingSoonNotify}
+              </a>
+              <button type="button" onClick={() => selectCategory("all")} className="link-underline text-[0.68rem] uppercase tracking-[0.22em]">
+                {sh.comingSoonBrowse}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="py-24 text-center text-muted">{sh.noResults}</p>
+        ))}
     </div>
   );
 }

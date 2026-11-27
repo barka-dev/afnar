@@ -36,7 +36,13 @@ const SLEEVE: Record<Cut, string> = {
   brodee: "M130 120 C112 128 104 148 101 172 L78 336 Q96 346 116 341 L131 228 Z",
   papillon: "M131 120 C104 132 66 196 38 292 Q34 312 56 316 L135 300 Z",
   kimono: "M130 120 L76 158 L60 300 Q78 310 100 305 L110 205 L132 228 Z",
+  khimar: "", // drawn separately (no abaya)
+  ensemble: "M130 120 C112 128 104 148 101 172 L82 332 Q96 341 113 337 L131 228 Z", // abaya sleeves under the khimar
 };
+
+/** Khimar hanging alone (khimar products), and the shorter one worn over the abaya (sets). */
+const KHIMAR_LONG = "M200 72 C160 72 132 96 124 130 L92 420 Q200 452 308 420 L276 130 C268 96 240 72 200 72 Z";
+const KHIMAR_SHORT = "M200 72 C162 72 136 94 128 126 L112 268 Q200 292 288 268 L272 126 C264 94 238 72 200 72 Z";
 
 interface Props {
   color: string;
@@ -81,6 +87,21 @@ export default function AbayaArt({ color, cut, view = "front", className }: Prop
 
       <rect width="400" height="533" fill={`url(#${bgId})`} />
 
+      {cut === "khimar" ? (
+        // Khimar alone on its hanger: a long cape with the face opening
+        <g transform={zoom}>
+          <ellipse cx="200" cy="440" rx="110" ry="6" fill="#000" opacity="0.08" />
+          <path d="M200 66 C200 56 211 54 211 46 C211 37 196 35 193 43" fill="none" stroke="#8C6D3F" strokeWidth="2" strokeLinecap="round" />
+          <path d={KHIMAR_LONG} fill={color} />
+          <path d={KHIMAR_LONG} fill={`url(#${shadeId})`} />
+          <ellipse cx="200" cy="128" rx="30" ry="38" fill={shade(color, -0.3)} opacity="0.55" />
+          <g fill="none" strokeLinecap="round">
+            <path d="M172 180 Q160 300 146 425" stroke="#000" strokeOpacity="0.12" strokeWidth="2.2" />
+            <path d="M228 180 Q240 300 254 425" stroke="#000" strokeOpacity="0.12" strokeWidth="2.2" />
+            <path d="M200 175 L200 438" stroke="#fff" strokeOpacity="0.07" strokeWidth="3" />
+          </g>
+        </g>
+      ) : (
       <g transform={zoom}>
         {/* shadow */}
         <ellipse cx="200" cy="512" rx="120" ry="7" fill="#000" opacity="0.1" />
@@ -147,7 +168,17 @@ export default function AbayaArt({ color, cut, view = "front", className }: Prop
         {cut === "papillon" && (
           <path d="M136 300 Q200 314 264 300" fill="none" stroke={shade(color, -0.3)} strokeOpacity="0.7" strokeWidth="1.5" />
         )}
+
+        {cut === "ensemble" && (
+          // Set: the matching khimar over the abaya's shoulders, in a slightly different shade
+          <>
+            <path d={KHIMAR_SHORT} fill={shade(color, light ? -0.22 : 0.3)} />
+            <path d={KHIMAR_SHORT} fill={`url(#${shadeId})`} />
+            <ellipse cx="200" cy="126" rx="28" ry="35" fill={shade(color, light ? -0.45 : 0.05)} opacity="0.55" />
+          </>
+        )}
       </g>
+      )}
     </svg>
   );
 }

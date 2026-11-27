@@ -37,6 +37,8 @@ export type Dictionary = {
     cashOnDelivery: string;
     language: string;
     country: string;
+    comingSoon: string;
+    oneSize: string;
   };
   shipping: {
     hours: (h: number) => string;
@@ -69,7 +71,6 @@ export type Dictionary = {
     heroText: string;
     heroCta: string;
     heroCta2: string;
-    heroCaption: string;
     promises: (d: {
       local: string;
       national: string;
@@ -171,6 +172,9 @@ export type Dictionary = {
     }) => string[];
     relatedEyebrow: string;
     relatedTitle: string;
+    setIncludes: string;
+    setSaving: (amount: string) => string;
+    setSizeNote: string;
   };
   sizeGuide: {
     eyebrow: string;
@@ -196,6 +200,10 @@ export type Dictionary = {
     sortPriceDesc: string;
     count: (n: number) => string;
     noResults: string;
+    comingSoonTitle: string;
+    comingSoonText: (category: string) => string;
+    comingSoonNotify: string;
+    comingSoonBrowse: string;
   };
   checkout: {
     emptyEyebrow: string;
@@ -328,5 +336,6 @@ export type Dictionary = {
     floatLabel: string;
     general: (store: string) => string;
     product: (store: string, product: string, color: string, size?: string) => string;
+    comingSoon: (store: string, category: string) => string;
   };
 };

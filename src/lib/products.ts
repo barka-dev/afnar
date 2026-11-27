@@ -5,12 +5,65 @@ import type { Locale } from "@/i18n/config";
  * The data itself lives in the database and is edited in the admin dashboard (/admin).
  */
 
-/** Illustration style used when a product or category has no photo yet */
-export type Cut = "classique" | "brodee" | "papillon" | "kimono";
-export const CUTS: Cut[] = ["classique", "brodee", "papillon", "kimono"];
+/** Illustration style used when a product or category has no photo yet ("khimar" and "ensemble" for khimars and sets) */
+export type Cut = "classique" | "brodee" | "papillon" | "kimono" | "khimar" | "ensemble";
+export const CUTS: Cut[] = ["classique", "brodee", "papillon", "kimono", "khimar", "ensemble"];
 
-export const SIZES = ["52", "54", "56", "58", "60"] as const;
-export type Size = (typeof SIZES)[number];
+/**
+ * Sizes are written the way Moroccan shops write them: S, M, L, XL, XXL (STANDARD_SIZES), plus any custom size the
+ * admin adds to a product, such as "M/L" or "XL/XXL". "TU" (taille unique / مقاس موحّد) is for one-size products
+ * such as khimars and never goes with other sizes. A size is its own id in the stock, the cart and orders.
+ * (Until November 2026 sizes were abaya lengths 52–60; db.ts converted them once with LENGTH_TO_LETTER.)
+ */
+export const STANDARD_SIZES = ["S", "M", "L", "XL", "XXL"] as const;
+export const ONE_SIZE = "TU";
+export type Size = string;
+
+/** The old abaya lengths and the letter size each one became (one to one, so no stock was merged). */
+export const LENGTH_TO_LETTER: Record<string, string> = { "52": "S", "54": "M", "56": "L", "58": "XL", "60": "XXL" };
+
+/** Cleans a size typed in the admin: "  xl / xxl " -> "XL/XXL". */
+export const normalizeSize = (s: string) => s.trim().toUpperCase().replace(/\s+/g, "");
+
+/** Letters, digits and "/" or "-" between parts ("M", "XL/XXL", "3XL"), at most 12 characters. */
+export const isValidSize = (s: string) => s.length <= 12 && /^[A-Z0-9]+([/-][A-Z0-9]+)*$/.test(s);
+
+const LETTER_RANK = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL", "3XL", "4XL", "5XL"];
+/** Sort key: by the first part's letter size ("M/L" just after "M"), numbers after letters, unknown sizes last. */
+function sizeRank(s: string): number {
+  const parts = s.split(/[/-]/);
+  const r = LETTER_RANK.indexOf(parts[0]);
+  const base = r >= 0 ? r * 10 : /^\d+$/.test(parts[0]) ? 1000 + Number(parts[0]) : 100000;
+  return base + (parts.length > 1 ? 5 : 0);
+}
+/** Sizes in wearing order: S, M, M/L, L, XL, XL/XXL, XXL… */
+export const sortSizes = (sizes: string[]) => [...sizes].sort((a, b) => sizeRank(a) - sizeRank(b) || a.localeCompare(b));
+
+/** True for a one-size product (khimars): no size to choose in the shop. */
+export const isOneSize = (p: Pick<Product, "sizes">) => p.sizes.length === 1 && p.sizes[0] === ONE_SIZE;
+
+/** How a size is written: "XL", or the one-size label ("مقاس موحّد" in the shop, "Taille unique" in the admin). */
+export const sizeLabel = (size: string, oneSize: string) => (size === ONE_SIZE ? oneSize : size);
+
+/**
+ * A set (الأطقم): one abaya colour + one matching khimar colour, sold together at the set's own price.
+ * Stored on the set product; its sizes, colour and stock are worked out from the two pieces (src/lib/server/catalog.ts).
+ */
+export interface Bundle {
+  abaya: { slug: string; color: string };
+  khimar: { slug: string; color: string };
+}
+
+/** A piece of a set, resolved from the catalogue, to show "this set contains…" on the product page. */
+export interface BundlePart {
+  role: "abaya" | "khimar";
+  slug: string;
+  name: string;
+  nameAr: string;
+  color: string;
+  colorAr: string;
+  price: number;
+}
 
 export interface ProductColor {
   /** French name — also the colour's id in the cart and in orders */
@@ -62,15 +115,21 @@ export interface Product {
   /** Hidden from the shop when false */
   active: boolean;
   position: number;
+  /** Set only: the abaya + khimar it is made of (see Bundle) */
+  bundle?: Bundle;
+  /** Set only: its two pieces as found in the catalogue (absent if a piece was deleted) */
+  bundleParts?: BundlePart[];
+  /** Set only: the set's own photos (the shop falls back to the pieces' photos when empty) */
+  bundleImages?: string[];
 }
 
-/** Abaya length and recommended wearer height, in cm. */
-export const SIZE_GUIDE: { size: Size; lengthCm: number; heightCm: [number, number] }[] = [
-  { size: "52", lengthCm: 132, heightCm: [150, 155] },
-  { size: "54", lengthCm: 137, heightCm: [155, 160] },
-  { size: "56", lengthCm: 142, heightCm: [160, 165] },
-  { size: "58", lengthCm: 147, heightCm: [165, 170] },
-  { size: "60", lengthCm: 152, heightCm: [170, 178] },
+/** Abaya length and recommended wearer height for each standard size, in cm (same values as the old lengths 52–60). */
+export const SIZE_GUIDE: { size: (typeof STANDARD_SIZES)[number]; lengthCm: number; heightCm: [number, number] }[] = [
+  { size: "S", lengthCm: 132, heightCm: [150, 155] },
+  { size: "M", lengthCm: 137, heightCm: [155, 160] },
+  { size: "L", lengthCm: 142, heightCm: [160, 165] },
+  { size: "XL", lengthCm: 147, heightCm: [165, 170] },
+  { size: "XXL", lengthCm: 152, heightCm: [170, 178] },
 ];
 
 // ——— Helpers ———
@@ -118,6 +177,15 @@ export function categoryName(c: Pick<Category, "name" | "nameAr">, _locale: Loca
 
 export function categoryDescription(c: Pick<Category, "description" | "descriptionAr">, _locale: Locale): string {
   return c.descriptionAr || c.description;
+}
+
+/**
+ * Categories with no product on the shop yet ("coming soon"). `products` is the shop list (active products),
+ * so a category with only hidden products also counts as coming soon. Updates by itself as products are added.
+ */
+export function comingSoonSlugs(categories: Pick<Category, "slug">[], products: Pick<Product, "category">[]): Set<string> {
+  const filled = new Set(products.map((p) => p.category));
+  return new Set(categories.map((c) => c.slug).filter((s) => !filled.has(s)));
 }
 
 export function totalStock(p: Pick<Product, "colors" | "sizes">): number {

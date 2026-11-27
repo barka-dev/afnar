@@ -17,8 +17,11 @@ import {
   categoryName,
   colorLabel,
   isColorAvailable,
+  isOneSize,
   isProductAvailable,
   localizeProduct,
+  ONE_SIZE,
+  sizeLabel,
   stockFor,
   type Product,
   type Size,
@@ -39,8 +42,12 @@ export default function ProductDetail({ product }: { product: Product }) {
   const available = isProductAvailable(product);
   const firstAvailable = product.colors.find((c) => isColorAvailable(product, c)) ?? product.colors[0];
 
+  // One-size products (khimars) have no size to choose: it is selected from the start
+  const oneSize = isOneSize(product);
   const [colorName, setColorName] = useState(firstAvailable.name);
-  const [size, setSize] = useState<Size | null>(null);
+  const [size, setSize] = useState<Size | null>(oneSize ? ONE_SIZE : null);
+  const sizeText = (s: string) => sizeLabel(s, t.common.oneSize);
+  const setSaving = product.bundleParts ? product.bundleParts.reduce((n, p) => n + p.price, 0) - product.price : 0;
   const [qty, setQty] = useState(1);
   const [slide, setSlide] = useState(0);
   const [error, setError] = useState("");
@@ -220,6 +227,26 @@ export default function ProductDetail({ product }: { product: Product }) {
         </div>
         <p className="mt-6 leading-relaxed text-muted">{lp.shortDescription}</p>
 
+        {/* Set: its two pieces, each linking to its own page, and the saving versus buying them separately */}
+        {product.bundleParts && (
+          <div className="mt-6 border border-stone/70 bg-sand/40 p-4 sm:p-5">
+            <p className="text-[0.68rem] uppercase tracking-[0.22em]">{tp.setIncludes}</p>
+            <ul className="mt-3 space-y-2 text-sm">
+              {product.bundleParts.map((part) => (
+                <li key={part.role} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                  <Link href={href(`/produit/${part.slug}`)} className="link-underline">
+                    {part.nameAr || part.name}
+                  </Link>
+                  <span className="text-muted">
+                    {part.colorAr || part.color} · {formatPrice(part.price)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {setSaving > 0 && <p className="mt-3 text-xs text-gold-dark">{tp.setSaving(formatPrice(setSaving))}</p>}
+          </div>
+        )}
+
         <div className="my-6 h-px bg-stone/70 sm:my-8" />
 
         {/* Colours */}
@@ -254,21 +281,24 @@ export default function ProductDetail({ product }: { product: Product }) {
           </div>
         </div>
 
-        {/* Sizes */}
+        {/* Sizes (one-size products: just the label, no buttons, no size guide) */}
         <div className="mt-8 scroll-mt-28" ref={sizesRef}>
           <div className="flex items-center justify-between">
             <p className="text-[0.68rem] uppercase tracking-[0.22em]">
-              {t.common.size} : <span className="text-muted">{size ?? "—"}</span>
+              {t.common.size} : <span className="text-muted">{size ? sizeText(size) : "—"}</span>
             </p>
-            <button
-              type="button"
-              onClick={() => setGuideOpen(true)}
-              className="-my-2 py-2 text-[0.62rem] uppercase tracking-[0.22em] text-muted underline decoration-stone underline-offset-4 hover:text-ink"
-            >
-              {tp.sizeGuide}
-            </button>
+            {!oneSize && (
+              <button
+                type="button"
+                onClick={() => setGuideOpen(true)}
+                className="-my-2 py-2 text-[0.62rem] uppercase tracking-[0.22em] text-muted underline decoration-stone underline-offset-4 hover:text-ink"
+              >
+                {tp.sizeGuide}
+              </button>
+            )}
           </div>
-          <div className="mt-4 grid grid-cols-5 gap-2">
+          {product.bundle && <p className="mt-2 text-xs text-muted">{tp.setSizeNote}</p>}
+          <div className={`mt-4 grid grid-cols-5 gap-2 ${oneSize ? "hidden" : ""}`}>
             {product.sizes.map((s) => {
               const ok = stockFor(color, s) > 0;
               const selected = s === size;
@@ -392,7 +422,7 @@ export default function ProductDetail({ product }: { product: Product }) {
               <p className="truncate font-serif text-lg leading-tight">{lp.name}</p>
               <p className="truncate text-xs text-muted">
                 {formatPrice(product.price)} · {colorLabel(color, locale)}
-                {size ? ` · ${t.common.size} ${size}` : ""}
+                {size ? ` · ${t.common.size} ${sizeText(size)}` : ""}
               </p>
             </div>
             <button

@@ -48,9 +48,12 @@ function toOrder(r: Row): OrderRecord {
 
 /**
  * Adds (sign = +1) or removes (sign = -1) the order's pieces from the stock.
+ * A set line moves the stock of its pieces (line.parts), not of the set itself.
  * Returns false (and changes nothing) if removing would make a stock negative.
  */
-async function moveStock(tx: Tx, lines: OrderLine[], sign: 1 | -1, allowShortage = false): Promise<boolean> {
+async function moveStock(tx: Tx, orderLines: OrderLine[], sign: 1 | -1, allowShortage = false): Promise<boolean> {
+  type StockLine = Pick<OrderLine, "slug" | "color" | "size" | "qty">;
+  const lines = orderLines.flatMap((l): StockLine[] => l.parts ?? [l]);
   const slugs = [...new Set(lines.map((l) => l.slug).filter(Boolean))] as string[];
   if (!slugs.length) return true;
   const rows = await tx<{ id: number; slug: string; colors: ProductColor[] }[]>`

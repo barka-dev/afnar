@@ -6,7 +6,7 @@ import { StarMotif } from "@/components/Icons";
 import { deliveryDelay } from "@/i18n";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cityLabel } from "@/lib/cities";
-import { colorLabel, productName } from "@/lib/products";
+import { colorLabel, productName, sizeLabel } from "@/lib/products";
 import { useCatalog } from "@/context/CatalogContext";
 import { LAST_ORDER_KEY, type OrderPayload } from "@/lib/order";
 
@@ -71,7 +71,7 @@ export default function ThankYou({ refParam }: { refParam: string }) {
                 <span>
                   {lineName(l.slug, l.name)}{" "}
                   <span className="text-muted">
-                    · {lineColor(l.slug, l.color)} · {t.common.sizeShort} {l.size} × {l.qty}
+                    · {lineColor(l.slug, l.color)} · {t.common.sizeShort} {sizeLabel(l.size, t.common.oneSize)} × {l.qty}
                   </span>
                 </span>
                 <span className="whitespace-nowrap">{formatPrice(l.qty * l.unitPrice)}</span>

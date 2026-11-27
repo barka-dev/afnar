@@ -1,11 +1,11 @@
 import Link from "next/link";
 import Reveal from "@/components/Reveal";
-import HeroVisual from "@/components/HeroVisual";
+import HeroCover from "@/components/HeroCover";
 import ProductCard from "@/components/ProductCard";
 import AbayaArt from "@/components/AbayaArt";
 import { ArrowIcon, CashIcon, ChatIcon, ExchangeIcon, StarMotif, TruckIcon } from "@/components/Icons";
 import Image from "next/image";
-import { categoryDescription, categoryName } from "@/lib/products";
+import { categoryDescription, categoryName, comingSoonSlugs } from "@/lib/products";
 import { getCategories, getProducts, getReviews } from "@/lib/server/catalog";
 import { getDictionary, hasLocale, localePath, shippingText } from "@/i18n";
 import { notFound } from "next/navigation";
@@ -22,32 +22,22 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
   const promises = h.promises(shippingText(lang)).map((p, i) => ({ ...p, icon: PROMISE_ICONS[i] }));
   const [products, categories, reviews] = await Promise.all([getProducts(), getCategories(), getReviews()]);
   const featured = [...products].sort((a, b) => Number(!!b.featured) - Number(!!a.featured)).slice(0, 4);
+  const comingSoon = comingSoonSlugs(categories, products);
 
   return (
     <>
-      {/* ——— Hero ——— */}
-      <section className="mx-auto grid max-w-7xl items-center gap-12 px-4 pb-16 pt-8 sm:px-5 md:gap-16 md:px-10 md:pb-24 lg:grid-cols-2 lg:pt-16">
-        <div className="max-w-xl">
-          <p className="eyebrow animate-fade-in">{h.eyebrow}</p>
-          <h1 className="mt-5 animate-fade-in font-serif text-[2.9rem] font-light leading-[1.05] sm:mt-6 sm:text-6xl md:text-7xl rtl:leading-[1.3]" style={{ animationDelay: "120ms" }}>
-            {h.heroTitle1}
-            <br />
-            <em className="text-gold-dark">{h.heroTitle2}</em>
-          </h1>
-          <p className="mt-6 max-w-md animate-fade-in leading-relaxed text-muted sm:mt-8" style={{ animationDelay: "240ms" }}>
-            {h.heroText}
-          </p>
-          <div className="mt-8 flex flex-col gap-3 animate-fade-in sm:mt-10 sm:flex-row sm:flex-wrap sm:gap-4" style={{ animationDelay: "360ms" }}>
-            <Link href={to("/boutique")} className="btn btn-primary w-full sm:w-auto">
-              {h.heroCta} <ArrowIcon className="h-4 w-4 rtl:-scale-x-100" />
-            </Link>
-            <Link href={to("/#commander")} className="btn btn-outline w-full sm:w-auto">
-              {h.heroCta2}
-            </Link>
-          </div>
-        </div>
-        <HeroVisual caption={h.heroCaption} />
-      </section>
+      {/* ——— Hero: full-width cover photo (public/hero/cover.jpg) with the text over it ——— */}
+      <HeroCover
+        eyebrow={h.eyebrow}
+        title1={h.heroTitle1}
+        title2={h.heroTitle2}
+        text={h.heroText}
+        cta={h.heroCta}
+        cta2={h.heroCta2}
+        ctaHref={to("/boutique")}
+        cta2Href={to("/#commander")}
+        image="/hero/cover.jpg"
+      />
 
       {/* ——— Promises ——— */}
       <section className="border-y border-stone/70 bg-sand/50">
@@ -68,19 +58,25 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
           <p className="eyebrow">{h.collectionsEyebrow}</p>
           <h2 className="mt-4 font-serif text-4xl font-light md:text-5xl">{h.collectionsTitle}</h2>
         </Reveal>
-        <div className="mt-10 grid grid-cols-2 gap-x-3 gap-y-8 sm:mt-16 sm:gap-5 md:grid-cols-4 md:gap-8">
+        <div className={`mt-10 grid grid-cols-2 gap-x-3 gap-y-8 sm:mt-16 sm:gap-5 md:gap-8 ${categories.length === 3 ? "md:grid-cols-3" : "md:grid-cols-4"}`}>
           {categories.map((c, i) => (
             <Reveal key={c.slug} delay={i * 120}>
               <Link href={to(`/boutique?categorie=${c.slug}`)} className="group block text-center">
                 <div className="arch relative aspect-[3/4.2] bg-sand">
                   <div className="absolute inset-0 transition-transform duration-[1400ms] ease-[var(--ease-luxe)] group-hover:scale-[1.07]">
                     {c.image ? (
-                      <Image src={c.image} alt="" fill sizes="(min-width: 768px) 25vw, 50vw" className="object-cover" />
+                      <Image src={c.image} alt="" fill sizes="(min-width: 768px) 33vw, 50vw" className="object-cover" />
                     ) : (
+                      // No photo yet: the category's drawing (abaya, khimar, or abaya + khimar for sets)
                       <AbayaArt color={c.color} cut={c.cut} className="h-full w-full" />
                     )}
                   </div>
                   <div className="absolute inset-0 bg-ink/0 transition-colors duration-700 group-hover:bg-ink/10" />
+                  {comingSoon.has(c.slug) && (
+                    <span className="absolute inset-x-0 bottom-5 mx-auto w-fit bg-ivory/90 px-3 py-1 text-[0.62rem] uppercase tracking-[0.22em] text-gold-dark">
+                      {t.common.comingSoon}
+                    </span>
+                  )}
                 </div>
                 <p className="mt-4 font-serif text-xl sm:mt-6 sm:text-2xl">{categoryName(c, lang)}</p>
                 <p className="mt-1 text-xs text-muted">{categoryDescription(c, lang)}</p>

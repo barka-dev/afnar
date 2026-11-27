@@ -2,15 +2,34 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { deleteProduct, saveProduct, type ProductInput } from "../../actions";
-import { CUTS, SIZES, slugify, type Category, type Product, type ProductColor, type Size } from "@/lib/products";
+import { deleteProduct, saveProduct, saveSizeOptions, type ProductInput } from "../../actions";
+import {
+  CUTS,
+  ONE_SIZE,
+  isValidSize,
+  normalizeSize,
+  slugify,
+  sortSizes,
+  type Category,
+  type Product,
+  type ProductColor,
+  type Size,
+} from "@/lib/products";
+import { teamSize } from "@/lib/format";
 import { Btn, Card, ConfirmButton, Field, ImagesInput, Notice, Toggle, inputCls, useSaved } from "../../_ui/ui";
 
-const CUT_LABEL: Record<string, string> = { classique: "Classique", brodee: "Brodée", papillon: "Papillon", kimono: "Kimono" };
+export const CUT_LABEL: Record<string, string> = {
+  classique: "Abaya classique",
+  brodee: "Abaya brodée",
+  papillon: "Abaya papillon",
+  kimono: "Kimono",
+  khimar: "Khimar",
+  ensemble: "Ensemble (abaya + khimar)",
+};
 
 const emptyColor = (): ProductColor => ({ name: "", nameAr: "", hex: "#141414", images: [], stock: {} });
 
-function toInput(p?: Product): ProductInput {
+function toInput(p: Product | undefined, defaultSizes: string[]): ProductInput {
   return {
     id: p?.id,
     slug: p?.slug ?? "",
@@ -25,7 +44,7 @@ function toInput(p?: Product): ProductInput {
     fabric: p?.fabric ?? "",
     details: p?.details ?? [],
     ar: p?.ar ?? { shortDescription: "", description: "", fabric: "", details: [] },
-    sizes: p?.sizes ?? [...SIZES],
+    sizes: p?.sizes ?? defaultSizes,
     colors: p?.colors.length ? p.colors.map((c) => ({ ...c, images: c.images ?? [] })) : [emptyColor()],
     isNew: p?.isNew ?? true,
     featured: p?.featured ?? false,
@@ -33,9 +52,9 @@ function toInput(p?: Product): ProductInput {
   };
 }
 
-export default function ProductForm({ product, categories }: { product?: Product; categories: Category[] }) {
+export default function ProductForm({ product, categories, sizeOptions }: { product?: Product; categories: Category[]; sizeOptions: string[] }) {
   const router = useRouter();
-  const [v, setV] = useState<ProductInput>(() => toInput(product));
+  const [v, setV] = useState<ProductInput>(() => toInput(product, sizeOptions));
   const [slugTouched, setSlugTouched] = useState(!!product);
   const [pending, start] = useTransition();
   const [error, setError] = useState("");
@@ -67,6 +86,43 @@ export default function ProductForm({ product, categories }: { product?: Product
       else router.refresh();
     });
 
+  // ——— Sizes: the store's size list (saved for every product, each size removable with ×), and "Taille unique",
+  // which always stays and goes alone. Sizes on this product but no longer in the list still show, so none is lost.
+  const [options, setOptions] = useState<string[]>(sizeOptions);
+  const [newSize, setNewSize] = useState("");
+  const [sizeError, setSizeError] = useState("");
+  const listed = sortSizes([...new Set([...options, ...v.sizes])].filter((s) => s !== ONE_SIZE));
+  const saveOptions = async (next: string[]) => {
+    const before = options;
+    setOptions(next);
+    const r = await saveSizeOptions(next);
+    if (!r.ok) {
+      setOptions(before);
+      setSizeError(r.error);
+    }
+  };
+  const toggleSize = (s: string) => {
+    setSizeError("");
+    const on = v.sizes.includes(s);
+    set("sizes", on ? v.sizes.filter((x) => x !== s) : s === ONE_SIZE ? [ONE_SIZE] : sortSizes([...v.sizes.filter((x) => x !== ONE_SIZE), s]));
+  };
+  const addSize = () => {
+    const s = normalizeSize(newSize);
+    if (!s) return;
+    if (!isValidSize(s) || s === ONE_SIZE) return setSizeError("Lettres et chiffres, séparés par « / » (ex. M/L, XL/XXL).");
+    if (!options.includes(s)) void saveOptions(sortSizes([...options, s]));
+    if (!v.sizes.includes(s)) toggleSize(s);
+    setNewSize("");
+    setSizeError("");
+  };
+  const removeSize = (s: string) => {
+    const inStock = v.colors.reduce((n, c) => n + (c.stock[s] ?? 0), 0);
+    if (inStock > 0 && !window.confirm(`Ce produit a ${inStock} pièce(s) en stock en taille ${s}. Retirer cette taille quand même ?`)) return;
+    setSizeError("");
+    if (options.includes(s)) void saveOptions(options.filter((x) => x !== s));
+    set("sizes", v.sizes.filter((x) => x !== s));
+  };
+
   const lines = (a: string[]) => a.join("\n");
   const unlines = (s: string) => s.split("\n");
 
@@ -95,7 +151,7 @@ export default function ProductForm({ product, categories }: { product?: Product
             )}
           </Field>
           <Field label="Nom (arabe)">{(id) => <input id={id} dir="rtl" className={inputCls} value={v.nameAr} onChange={(e) => set("nameAr", e.target.value)} />}</Field>
-          <Field label="Adresse de la page (slug) *" error={fields.slug} hint={`/fr/produit/${v.slug || "…"}`}>
+          <Field label="Adresse de la page (slug) *" error={fields.slug} hint={`/produit/${v.slug || "…"}`}>
             {(id) => (
               <input
                 id={id}
@@ -164,22 +220,57 @@ export default function ProductForm({ product, categories }: { product?: Product
 
       <Card title="Tailles disponibles">
         <div className="flex flex-wrap gap-2">
-          {SIZES.map((s) => {
+          {[...listed, ONE_SIZE].map((s) => {
             const on = v.sizes.includes(s);
+            const removable = s !== ONE_SIZE;
             return (
-              <button
-                key={s}
-                type="button"
-                aria-pressed={on}
-                onClick={() => set("sizes", on ? v.sizes.filter((x) => x !== s) : SIZES.filter((x) => x === s || v.sizes.includes(x)))}
-                className="h-11 min-w-14 rounded-md border border-stone bg-white px-3 text-sm aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-ivory"
-              >
-                {s}
-              </button>
+              <span key={s} className="relative">
+                <button
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => toggleSize(s)}
+                  className={`h-11 min-w-14 rounded-md border border-stone bg-white px-3 text-sm aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-ivory ${removable ? "pe-8" : ""}`}
+                >
+                  {s === ONE_SIZE ? "Taille unique" : s}
+                </button>
+                {removable && (
+                  <button
+                    type="button"
+                    onClick={() => removeSize(s)}
+                    aria-label={`Retirer la taille ${s} de la liste`}
+                    title="Retirer cette taille de la liste (pour tous les produits)"
+                    className={`absolute inset-y-0 end-0 flex w-8 items-center justify-center text-base ${on ? "text-ivory/80 hover:text-ivory" : "text-muted hover:text-sold"}`}
+                  >
+                    ×
+                  </button>
+                )}
+              </span>
             );
           })}
         </div>
-        {fields.sizes && <p className="mt-2 text-xs text-sold">{fields.sizes}</p>}
+        <div className="mt-4 flex max-w-sm gap-2">
+          <input
+            className={inputCls}
+            value={newSize}
+            placeholder="Ajouter une taille, ex. M/L ou XL/XXL"
+            aria-label="Ajouter une taille à la liste"
+            onChange={(e) => setNewSize(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addSize();
+              }
+            }}
+          />
+          <Btn variant="outline" onClick={addSize} className="shrink-0">
+            + Ajouter
+          </Btn>
+        </div>
+        <p className="mt-2 text-xs text-muted">
+          Cliquez une taille pour la proposer sur ce produit. × la retire de la liste pour tous les produits (les produits qui
+          l&apos;ont déjà la gardent) ; pour la remettre, retapez-la ci-dessus. Khimars : « Taille unique », seule.
+        </p>
+        {(sizeError || fields.sizes) && <p className="mt-2 text-xs text-sold">{sizeError || fields.sizes}</p>}
       </Card>
 
       <Card
@@ -209,8 +300,8 @@ export default function ProductForm({ product, categories }: { product?: Product
               <p className="mb-1.5 mt-4 text-xs text-muted">Stock par taille</p>
               <div className="flex flex-wrap gap-2">
                 {v.sizes.map((s: Size) => (
-                  <label key={s} className="w-[4.5rem]">
-                    <span className="block text-center text-xs text-muted">T{s}</span>
+                  <label key={s} className={s === ONE_SIZE ? "w-28" : s.length > 3 ? "w-24" : "w-[4.5rem]"}>
+                    <span className="block text-center text-xs text-muted">{teamSize(s)}</span>
                     <input
                       inputMode="numeric"
                       className={`${inputCls} text-center tabular-nums`}

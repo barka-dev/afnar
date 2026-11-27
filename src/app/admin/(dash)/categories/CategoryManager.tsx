@@ -8,7 +8,14 @@ import { CUTS, slugify, type Category } from "@/lib/products";
 import { deleteCategory, moveCategory, saveCategory, type CategoryInput } from "../../actions";
 import { Btn, ConfirmButton, Field, Notice, SingleImageInput, inputCls } from "../../_ui/ui";
 
-const CUT_LABEL: Record<string, string> = { classique: "Classique", brodee: "Brodée", papillon: "Papillon", kimono: "Kimono" };
+const CUT_LABEL: Record<string, string> = {
+  classique: "Abaya classique",
+  brodee: "Abaya brodée",
+  papillon: "Abaya papillon",
+  kimono: "Kimono",
+  khimar: "Khimar",
+  ensemble: "Ensemble (abaya + khimar)",
+};
 
 export default function CategoryManager({ categories, counts }: { categories: Category[]; counts: Record<string, number> }) {
   const router = useRouter();

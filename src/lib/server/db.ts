@@ -1,6 +1,7 @@
 import "server-only";
 import postgres from "postgres";
 import { SEED_CATEGORIES, SEED_PRODUCTS } from "./seed-data";
+import { LENGTH_TO_LETTER } from "@/lib/products";
 
 /**
  * Postgres connection (Neon on Vercel). Set DATABASE_URL in .env.local / Vercel settings.
@@ -15,7 +16,9 @@ export class DatabaseNotConfigured extends Error {
 
 type Sql = postgres.Sql<{}>;
 
-const g = globalThis as unknown as { __afnarSql?: Sql; __afnarSchema?: Promise<void> };
+// __afnarSchemaV4: the migration promise is kept per process; the version in its name makes a running dev server
+// (and every new deployment) run migrate() again after a schema change. Bump it with each change to migrate().
+const g = globalThis as unknown as { __afnarSql?: Sql; __afnarSchemaV4?: Promise<void> };
 
 function connect(): Sql {
   const url = process.env.DATABASE_URL?.trim();
@@ -37,11 +40,11 @@ function connect(): Sql {
 /** Ready-to-use connection (schema created and seeded). */
 export async function db(): Promise<Sql> {
   const sql = connect();
-  g.__afnarSchema ??= migrate(sql).catch((err) => {
-    g.__afnarSchema = undefined; // retry on next call
+  g.__afnarSchemaV4 ??= migrate(sql).catch((err) => {
+    g.__afnarSchemaV4 = undefined; // retry on next call
     throw err;
   });
-  await g.__afnarSchema;
+  await g.__afnarSchemaV4;
   return sql;
 }
 
@@ -130,6 +133,8 @@ async function migrate(sql: Sql) {
       )`;
     await tx`create index if not exists orders_created_idx on orders (created_at desc)`;
     await tx`create index if not exists orders_status_idx on orders (status)`;
+    // Sets (الأطقم): the abaya + khimar a set is made of
+    await tx`alter table products add column if not exists bundle jsonb`;
 
     // First start: import the original catalogue
     const [{ n }] = await tx<{ n: number }[]>`select count(*)::int as n from categories`;
@@ -151,5 +156,106 @@ async function migrate(sql: Sql) {
                   ${tx.json([...p.sizes])}, ${tx.json(p.colors as postgres.JSONValue)}, ${!!p.isNew}, ${!!p.featured}, ${i})`;
       }
     }
+
+    await regroupCategories(tx);
+
+    // Small admin settings (e.g. "size_options": the size list of the product form)
+    await tx`create table if not exists settings (key text primary key, value jsonb not null)`;
+
+    // One-time steps that must never run twice are recorded here
+    await tx`create table if not exists app_migrations (name text primary key, done_at timestamptz not null default now())`;
+    await runOnce(tx, "letter-sizes", convertLengthsToLetters);
   });
+}
+
+async function runOnce(tx: postgres.TransactionSql<{}>, name: string, step: (tx: postgres.TransactionSql<{}>) => Promise<void>) {
+  const [done] = await tx`select 1 from app_migrations where name = ${name}`;
+  if (done) return;
+  await step(tx);
+  await tx`insert into app_migrations (name) values (${name})`;
+}
+
+/**
+ * Sizes switch from abaya lengths (52–60) to letter sizes (November 2026): each length becomes one letter
+ * (LENGTH_TO_LETTER, one to one, so the stock moves unchanged), in the products' sizes and each colour's stock.
+ * Recorded in app_migrations so that a custom size typed later (even a number) is never converted.
+ * Past orders keep the size they were placed in.
+ */
+async function convertLengthsToLetters(tx: postgres.TransactionSql<{}>) {
+  const conv = (s: string) => LENGTH_TO_LETTER[s] ?? s;
+  const rows = await tx<{ id: number; sizes: string[]; colors: { stock?: Record<string, number> }[] }[]>`select id, sizes, colors from products`;
+  let n = 0;
+  for (const r of rows) {
+    const sizes = Array.isArray(r.sizes) ? r.sizes : [];
+    const colors = Array.isArray(r.colors) ? r.colors : [];
+    const touched = sizes.some((s) => s in LENGTH_TO_LETTER) || colors.some((c) => Object.keys(c.stock ?? {}).some((s) => s in LENGTH_TO_LETTER));
+    if (!touched) continue;
+    const newColors = colors.map((c) => ({ ...c, stock: Object.fromEntries(Object.entries(c.stock ?? {}).map(([s, q]) => [conv(s), q])) }));
+    await tx`
+      update products set sizes = ${tx.json(sizes.map(conv))}, colors = ${tx.json(newColors as postgres.JSONValue)}, updated_at = now()
+      where id = ${r.id}`;
+    n++;
+  }
+  // Reviews show the size the customer bought: same conversion
+  await tx`
+    update reviews set product_size = case product_size
+      when '52' then 'S' when '54' then 'M' when '56' then 'L' when '58' then 'XL' when '60' then 'XXL' end
+    where product_size in ('52', '54', '56', '58', '60')`;
+  console.info(`[db] sizes converted to letters on ${n} products`);
+}
+
+const NEW_CATEGORIES = [
+  {
+    slug: "abayas",
+    name: "Abayas",
+    nameAr: "العبايات",
+    description: "Abayas amples et opaques : classiques, brodées, papillon et kimonos.",
+    descriptionAr: "عبايات واسعة وغير شفّافة: كلاسيكية، مطرّزة، فراشة وكيمونو.",
+    cut: "classique",
+    color: "#1C2541",
+  },
+  {
+    slug: "khimars",
+    name: "Khimars",
+    nameAr: "الخمارات",
+    description: "Khimars longs et couvrants, de plusieurs styles, dans des tissus légers et opaques.",
+    descriptionAr: "خمارات طويلة وساترة بأنواع مختلفة، من أقمشة خفيفة لا تشفّ.",
+    cut: "khimar",
+    color: "#6B5A4E",
+  },
+  {
+    slug: "ensembles",
+    name: "Ensembles",
+    nameAr: "الأطقم",
+    description: "Une abaya et son khimar assorti, réunis dans un ensemble à prix spécial.",
+    descriptionAr: "عباية وخمار منسّقان، في طقم واحد بثمن خاص.",
+    cut: "ensemble",
+    color: "#2F3B33",
+  },
+];
+
+/**
+ * One-time regroup into exactly three categories: Abayas, Khimars, Sets (الأطقم) (November 2026). Runs only while
+ * none of the three exists yet, so it never runs twice. Until then the shop only sold abayas, so the products of
+ * every existing category (classique, brodée, papillon, kimono, egypt…) move to "abayas", each keeping its own
+ * illustration style, and those emptied categories are removed. No product is deleted.
+ */
+async function regroupCategories(tx: postgres.TransactionSql<{}>) {
+  const slugs = NEW_CATEGORIES.map((c) => c.slug);
+  const [{ n }] = await tx<{ n: number }[]>`select count(*)::int as n from categories where slug = any(${slugs})`;
+  if (n > 0) return;
+
+  const ids = new Map<string, number>();
+  for (const [i, c] of NEW_CATEGORIES.entries()) {
+    const [row] = await tx<{ id: number }[]>`
+      insert into categories (slug, name, name_ar, description, description_ar, cut, color, position)
+      values (${c.slug}, ${c.name}, ${c.nameAr}, ${c.description}, ${c.descriptionAr}, ${c.cut}, ${c.color}, ${i})
+      returning id`;
+    ids.set(c.slug, row.id);
+  }
+  await tx`
+    update products set category_id = ${ids.get("abayas")!}, updated_at = now()
+    where category_id is not null and category_id in (select id from categories where not slug = any(${slugs}))`;
+  await tx`delete from categories where not slug = any(${slugs})`;
+  console.info("[db] categories regrouped into Abayas / Khimars / Ensembles");
 }

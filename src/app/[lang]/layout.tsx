@@ -23,6 +23,7 @@ import CartDrawer from "@/components/CartDrawer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import { CatalogProvider } from "@/context/CatalogContext";
 import { getCategories, getProducts } from "@/lib/server/catalog";
+import { comingSoonSlugs } from "@/lib/products";
 
 export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
@@ -68,7 +69,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
               <AnnouncementBar locale={lang} />
               <Header />
               <main>{children}</main>
-              <Footer locale={lang} categories={categories} />
+              <Footer locale={lang} categories={categories} comingSoon={[...comingSoonSlugs(categories, products)]} />
               <CartDrawer />
               <WhatsAppFloat />
             </CartProvider>

@@ -13,9 +13,9 @@
 
 import { STORE } from "@/lib/config";
 import { formatPrice } from "@/i18n";
-import { formatDH } from "@/lib/format";
+import { formatDH, teamSize } from "@/lib/format";
 import { cityLabel } from "@/lib/cities";
-import { colorLabel, productName, type Product } from "@/lib/products";
+import { ONE_SIZE, colorLabel, productName, type Product } from "@/lib/products";
 import type { OrderPayload } from "@/lib/order";
 
 export type SendResult = { ok: true; via: string } | { ok: false; via: string; error: string };
@@ -43,7 +43,7 @@ export function customerConfirmationText(o: OrderPayload, products: Product[]): 
     const c = p?.colors.find((x) => x.name === line.color);
     const name = p ? productName(p, l) : line.name;
     const color = c ? colorLabel(c, l) : line.color;
-    return `- ${name} (${color}، مقاس ${line.size}) × ${line.qty}`;
+    return `- ${name} (${color}، ${line.size === ONE_SIZE ? "مقاس موحّد" : `مقاس ${line.size}`}) × ${line.qty}`;
   });
   const city = cityLabel(o.customer.city, l);
 
@@ -78,7 +78,7 @@ export function buildOrderMessage(o: OrderPayload, products: Product[], orderId?
   const items = o.lines
     .map(
       (l, i) =>
-        `${i + 1}. <b>${esc(l.name)}</b> — ${esc(l.color)}, T${esc(l.size)}\n` +
+        `${i + 1}. <b>${esc(l.name)}</b> — ${esc(l.color)}, ${esc(teamSize(l.size))}\n` +
         `    ${l.qty} × ${dh(l.unitPrice)} = ${dh(l.qty * l.unitPrice)}`
     )
     .join("\n");

@@ -86,11 +86,19 @@ src/
 
 ### Caching
 - The shop reads through `getProducts` / `getCategories` / `getReviews` (`unstable_cache`, tags `TAGS.catalog` and `TAGS.reviews` in `catalog.ts`). The admin uses the uncached `read*` functions.
+- The cache keys are versioned (`categories-v3`, `products-v3`). Bump them when the shape of cached data changes: Vercel keeps this cache across deployments.
 - After any mutation that affects the shop, call `refreshShop([...tags])` in `admin/actions.ts` (it calls `updateTag` and `revalidatePath("/", "layout")`). The order API calls `revalidateTag(TAGS.catalog)` because stock changes.
 
 ### Stock
 - Stock lives per colour per size inside `products.colors[].stock`. A colour's French `name` is its id in the cart and in orders.
+- Sizes are free strings. The product form offers the store's size list, saved in the `settings` table (key `size_options`, `readSizeOptions` / `saveSizeOptions`; defaults to `STANDARD_SIZES` = `S`, `M`, `L`, `XL`, `XXL`). The admin can remove any size from that list or add custom ones (`M/L`, `XL/XXL`…; checked by `isValidSize`, cleaned by `normalizeSize`, ordered by `sortSizes`), or `TU` alone (one size, khimars; `ONE_SIZE`, shown «مقاس موحّد» / "Taille unique" via `sizeLabel` / `teamSize`). Until November 2026 sizes were lengths 52–60; `db.ts` converted them once (`LENGTH_TO_LETTER`, 52→S … 60→XXL, recorded in the `app_migrations` table). Old orders keep their numeric size.
 - `createOrder` reserves stock in a transaction (`moveStock`, rows locked `for update`). Moving an order to `cancelled` / `returned` (`RELEASES_STOCK`) or deleting it gives the stock back; leaving those states takes it again.
+
+### Categories and sets (الأطقم)
+- Three main categories: `abayas`, `khimars`, `ensembles`. `regroupCategories()` in `db.ts` created them once (merging the old abaya cut categories); it only runs while none of the three exists.
+- A set is a product with `bundle = { abaya: {slug, color}, khimar: {slug, color} }`, created in Admin → Produits → « Nouvel ensemble » (`EnsembleForm`, `saveEnsemble`). It has no stock of its own: `resolveBundles()` in `catalog.ts` gives it the abaya's sizes, one colour "<abaya colour> + <khimar colour>", stock per size = min(abaya, khimar), and the pieces' photos if it has none (`bundleImages` = its own). The crossed-out price defaults to the two pieces' prices.
+- An order line for a set records `parts` (abaya in the chosen size + khimar `TU`); `moveStock` moves the parts' stock, so cancelling returns exactly those pieces. Renaming a piece's colour or deleting the piece makes the set unavailable.
+- Categories without any shop product show «قريبًا» (`comingSoonSlugs`) on the home page, the shop filter and the footer.
 
 ### Orders (`POST /api/order`)
 The browser sends only slugs, colours, sizes, quantities and customer details. The server re-validates everything against the DB (prices, stock, city in `MOROCCAN_CITIES`, Moroccan phone via `normalizeMoroccanPhone`), computes shipping with `shippingFee`, saves the order, then notifies Telegram. It succeeds if either the DB save or the Telegram send works. Spam protection: honeypot field `website` plus an in-memory rate limit (5 per 10 min per IP). **Never trust client prices.**
